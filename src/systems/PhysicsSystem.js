@@ -81,8 +81,10 @@ export class PhysicsSystem {
     const stepDt = dt / steps;
 
     for (let step = 0; step < steps; step += 1) {
-      projectile.transform.vx += game.state.wind * projectile.shot.windInfluenceMultiplier * stepDt;
-      projectile.transform.vy += CONFIG.world.gravity * projectile.shot.gravityMultiplier * stepDt;
+      const shot = projectile.shot;
+      const windAcceleration = game.state.wind * shot.windInfluenceMultiplier / shot.weight;
+      projectile.transform.vx += windAcceleration * stepDt;
+      projectile.transform.vy += CONFIG.world.gravity * shot.gravityMultiplier * stepDt;
       projectile.transform.x += projectile.transform.vx * stepDt;
       projectile.transform.y += projectile.transform.vy * stepDt;
       projectile.age += stepDt;

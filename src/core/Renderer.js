@@ -359,17 +359,36 @@ export class Renderer {
   }
 
   drawProjectile(ctx, projectile) {
+    const trailScale = projectile.shot.shape === "rock" ? 1.2 : projectile.shot.shape === "stick" ? 0.8 : 1;
+
     for (let index = 0; index < projectile.trail.length; index += 1) {
       const point = projectile.trail[index];
       const alpha = (index + 1) / projectile.trail.length;
-      ctx.fillStyle = projectile.shot.trailColor.replace(/0\.\d+\)$/u, `${(alpha * 0.35).toFixed(2)})`);
+      const radius = (projectile.shot.radius * 0.18 + alpha * projectile.shot.radius * 0.22) * trailScale;
+      ctx.fillStyle = projectile.shot.trailColor.replace(/0\.\d+\)$/u, `${(alpha * 0.4).toFixed(2)})`);
       ctx.beginPath();
-      ctx.arc(point.x, point.y, 1.4 + alpha * 2.1, 0, Math.PI * 2);
+      ctx.arc(point.x, point.y, radius, 0, Math.PI * 2);
       ctx.fill();
     }
 
     const { x, y, vx, vy } = projectile.transform;
     const angle = Math.atan2(vy, vx || 0.001);
+
+    if (projectile.shot.shape === "rocket") {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(angle + Math.PI);
+      ctx.fillStyle = "rgba(255, 226, 164, 0.82)";
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(-12, -4);
+      ctx.lineTo(-18, 0);
+      ctx.lineTo(-12, 4);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
     this.drawWeaponShape(ctx, projectile.shot.shape, x, y, angle, 1, projectile.shot.coreColor, projectile.shot.ringColor);
   }
 
@@ -569,5 +588,6 @@ export class Renderer {
     ctx.stroke();
   }
 }
+
 
 

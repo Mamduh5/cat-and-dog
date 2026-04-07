@@ -67,7 +67,7 @@ export class UISystem {
       button.classList.toggle("is-active", button.dataset.difficulty === level);
     });
     setText(this.refs.difficultyCopy, description);
-    setText(this.refs.matchNote, `Outside panels are optional. ${CONFIG.cpuProfiles[level].label} CPU is selected for single-player games.`);
+    setText(this.refs.matchNote, `CPU: ${CONFIG.cpuProfiles[level].description}`);
   }
 
   setModeLabel(mode, difficulty) {
@@ -182,4 +182,5 @@ export class UISystem {
     setText(this.refs.turnBannerTitle, state.banner.title);
   }
 }
+
 

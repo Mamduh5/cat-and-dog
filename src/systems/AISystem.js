@@ -52,7 +52,7 @@ export class AISystem {
     let directHit = false;
 
     for (let step = 0; step < 320; step += 1) {
-      vx += game.state.wind * shot.windInfluenceMultiplier * (1 / 60);
+      vx += (game.state.wind * shot.windInfluenceMultiplier / shot.weight) * (1 / 60);
       vy += CONFIG.world.gravity * shot.gravityMultiplier * (1 / 60);
       x += vx * (1 / 60);
       y += vy * (1 / 60);
@@ -87,6 +87,6 @@ export class AISystem {
     }
 
     const splashScore = Math.max(0, finalDistance - shot.splashRadius * 0.7);
-    return { score: directHit ? -35 : Math.min(bestDistance, splashScore * 1.05 + bestDistance * 0.22) };
+    return { score: directHit ? -35 : Math.min(bestDistance, splashScore * 1.06 + bestDistance * 0.24) };
   }
 }

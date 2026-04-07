@@ -71,7 +71,7 @@ export class Game {
       onWeaponSelect: (key) => this.turnSystem.handleWeaponSelection(this, key)
     });
     this.ui.bindTouchControls(this.input);
-    this.ui.setFullscreenAvailability(Boolean(document.fullscreenEnabled));
+    this.ui.setFullscreenAvailability(Boolean(document.fullscreenEnabled && this.preset.touch));
     this.ui.updateFullscreenState(Boolean(document.fullscreenElement));
     document.addEventListener("fullscreenchange", () => {
       this.ui.updateFullscreenState(Boolean(document.fullscreenElement));
@@ -183,3 +183,4 @@ export class Game {
     requestAnimationFrame((next) => this.loop(next));
   }
 }
+

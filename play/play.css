@@ -61,8 +61,7 @@ body {
   min-width: 0;
 }
 
-.eyebrow,
-.menu-kicker {
+.eyebrow {
   margin: 0 0 4px;
   font-size: 0.74rem;
   letter-spacing: 0.16em;
@@ -82,7 +81,7 @@ h1 {
 }
 
 h2 {
-  font-size: clamp(1.9rem, 4vw, 2.7rem);
+  font-size: clamp(1.7rem, 3.4vw, 2.2rem);
   line-height: 0.95;
 }
 
@@ -128,18 +127,18 @@ canvas {
 
 .canvas-shell-button {
   position: absolute;
-  right: 12px;
-  bottom: 72px;
+  right: 10px;
+  bottom: 54px;
   z-index: 3;
   border: 0;
   border-radius: 999px;
-  padding: 6px 10px;
-  background: rgba(16, 31, 48, 0.68);
-  color: white;
+  padding: 4px 8px;
+  background: rgba(16, 31, 48, 0.4);
+  color: rgba(255, 255, 255, 0.82);
   font: inherit;
-  font-size: 0.68rem;
+  font-size: 0.56rem;
   font-weight: 700;
-  box-shadow: 0 4px 10px rgba(13, 24, 42, 0.12);
+  letter-spacing: 0.03em;
 }
 
 .canvas-shell-button[hidden] {
@@ -166,22 +165,23 @@ canvas {
 
 .weapon-bar-button {
   min-width: 0;
+  min-height: 42px;
   border: 0;
   border-radius: 11px;
-  padding: 4px 6px;
+  padding: 3px 5px;
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
-  gap: 5px;
-  background: rgba(19, 34, 52, 0.58);
+  gap: 4px;
+  background: rgba(19, 34, 52, 0.54);
   color: white;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
   cursor: pointer;
 }
 
 .weapon-bar-button.is-active {
-  background: rgba(26, 45, 68, 0.76);
-  box-shadow: inset 0 0 0 1px rgba(255, 233, 177, 0.5);
+  background: rgba(26, 45, 68, 0.72);
+  box-shadow: inset 0 0 0 1px rgba(255, 233, 177, 0.42);
 }
 
 .weapon-bar-button.is-disabled,
@@ -199,29 +199,32 @@ canvas {
 }
 
 .weapon-label {
-  font-size: 0.67rem;
+  font-size: 0.63rem;
   font-weight: 800;
+  line-height: 1;
 }
 
 .weapon-note {
-  font-size: 0.55rem;
-  color: rgba(255, 255, 255, 0.58);
+  font-size: 0.52rem;
+  color: rgba(255, 255, 255, 0.56);
+  line-height: 1;
 }
 
 .weapon-count {
-  min-width: 22px;
-  padding: 1px 5px;
+  min-width: 18px;
+  padding: 0 4px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.07);
   text-align: center;
-  font-size: 0.56rem;
+  font-size: 0.52rem;
   font-weight: 800;
+  line-height: 1.2;
 }
 
 .weapon-icon {
   position: relative;
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   display: inline-block;
   flex: 0 0 auto;
 }
@@ -233,7 +236,7 @@ canvas {
 }
 
 .weapon-icon-light {
-  width: 14px;
+  width: 12px;
   height: 3px;
   border-radius: 999px;
   background: #7fd0eb;
@@ -246,8 +249,8 @@ canvas {
 }
 
 .weapon-icon-super {
-  width: 14px;
-  height: 8px;
+  width: 12px;
+  height: 7px;
   background: #ef6b52;
   clip-path: polygon(0 28%, 58% 28%, 58% 0, 100% 50%, 58% 100%, 58% 72%, 0 72%);
 }
@@ -258,7 +261,7 @@ canvas {
   left: -4px;
   top: 2px;
   width: 4px;
-  height: 4px;
+  height: 3px;
   background: #ffd98a;
   clip-path: polygon(0 50%, 100% 0, 100% 100%);
 }
@@ -267,8 +270,8 @@ canvas {
   border-radius: 50%;
   background: #6fcb87;
   color: #14321c;
-  font-size: 10px;
-  line-height: 12px;
+  font-size: 9px;
+  line-height: 10px;
   text-align: center;
   font-weight: 900;
 }
@@ -313,14 +316,14 @@ canvas {
   transform: translateX(-50%);
   bottom: 54px;
   z-index: 3;
-  max-width: min(320px, calc(100% - 96px));
-  padding: 5px 9px;
+  max-width: min(280px, calc(100% - 110px));
+  padding: 4px 8px;
   border-radius: 999px;
-  background: rgba(255, 251, 242, 0.68);
-  border: 1px solid rgba(23, 48, 77, 0.05);
+  background: rgba(255, 251, 242, 0.64);
+  border: 1px solid rgba(23, 48, 77, 0.04);
   color: var(--muted);
-  font-size: 0.66rem;
-  line-height: 1.25;
+  font-size: 0.62rem;
+  line-height: 1.2;
   text-align: center;
   pointer-events: none;
   transition: opacity 220ms ease;
@@ -337,10 +340,10 @@ canvas {
 }
 
 .overlay-card {
-  width: min(470px, calc(100% - 20px));
+  width: min(430px, calc(100% - 20px));
   max-height: calc(100% - 20px);
   overflow: auto;
-  padding: 22px;
+  padding: 20px;
   border-radius: 22px;
   background:
     radial-gradient(circle at top right, rgba(255, 255, 255, 0.45), transparent 40%),
@@ -349,30 +352,33 @@ canvas {
 }
 
 .menu-card {
-  width: min(420px, calc(100% - 20px));
+  width: min(360px, calc(100% - 18px));
 }
 
 .menu-card h2 {
-  margin-top: 6px;
+  font-size: clamp(1.45rem, 3vw, 1.95rem);
 }
 
-.menu-subtitle,
 .overlay-copy,
 .difficulty-copy {
   margin-top: 8px;
-  line-height: 1.45;
+  line-height: 1.35;
   color: var(--muted);
+}
+
+.difficulty-copy {
+  font-size: 0.78rem;
 }
 
 .menu-actions {
   display: grid;
   gap: 10px;
-  margin-top: 18px;
+  margin-top: 14px;
 }
 
 .difficulty-panel {
-  margin-top: 16px;
-  padding: 14px;
+  margin-top: 14px;
+  padding: 12px;
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.5);
   border: 1px solid rgba(23, 48, 77, 0.08);
@@ -383,13 +389,13 @@ canvas {
 }
 
 .menu-subactions {
-  margin-top: 14px;
+  margin-top: 12px;
 }
 
 .mini-heading,
 .panel-title {
   margin-bottom: 10px;
-  font-size: 0.74rem;
+  font-size: 0.72rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--muted);
@@ -413,7 +419,7 @@ canvas {
 .segment-button {
   border: 0;
   border-radius: 14px;
-  min-height: 42px;
+  min-height: 40px;
   padding: 9px 12px;
   background: rgba(40, 66, 95, 0.08);
   color: var(--ink);
@@ -429,13 +435,13 @@ canvas {
   justify-content: center;
   gap: 10px;
   flex-wrap: wrap;
-  margin-top: 18px;
+  margin-top: 16px;
 }
 
 .action-button {
   border: 0;
   border-radius: 999px;
-  min-height: 44px;
+  min-height: 42px;
   padding: 11px 18px;
   color: white;
   background: linear-gradient(135deg, #ec8351, #da5a27);
@@ -448,7 +454,7 @@ canvas {
 .ghost-button {
   border: 0;
   border-radius: 999px;
-  min-height: 42px;
+  min-height: 40px;
   padding: 10px 16px;
   color: var(--ink);
   background: rgba(23, 48, 77, 0.08);
@@ -595,20 +601,14 @@ body.device-mobile {
   padding: 6px;
 }
 
-.device-mobile .canvas-shell-button {
-  right: 10px;
-  bottom: 66px;
-  padding: 6px 9px;
-}
-
 .device-mobile .weapon-bar {
-  left: 10px;
-  right: 10px;
-  bottom: 10px;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
 }
 
 .device-mobile .canvas-hint {
-  bottom: 50px;
+  bottom: 48px;
   max-width: calc(100% - 88px);
 }
 
@@ -628,8 +628,8 @@ body.device-mobile {
 }
 
 #gameplaySurface:fullscreen .canvas-shell-button {
-  right: 12px;
-  bottom: 76px;
+  right: 10px;
+  bottom: 58px;
 }
 
 @media (max-width: 980px) {
@@ -657,18 +657,40 @@ body.device-mobile {
     display: none;
   }
 
-  .weapon-label {
-    font-size: 0.62rem;
-  }
-
-  .weapon-count {
-    font-size: 0.52rem;
-  }
-
   .controls-list li,
   .touch-header {
     flex-direction: column;
     align-items: flex-start;
+  }
+}
+
+@media (max-width: 560px) {
+  .weapon-bar-button {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    align-content: center;
+    gap: 2px;
+    padding: 4px 2px;
+    min-height: 44px;
+  }
+
+  .weapon-copy {
+    align-items: center;
+  }
+
+  .weapon-label {
+    font-size: 0.54rem;
+  }
+
+  .weapon-count {
+    min-width: 0;
+    padding: 0;
+    background: transparent;
+    font-size: 0.48rem;
+  }
+
+  .canvas-hint {
+    max-width: calc(100% - 84px);
   }
 }
 
@@ -695,19 +717,20 @@ body.device-mobile {
   }
 
   .canvas-shell-button {
-    bottom: 62px;
+    right: 8px;
+    bottom: 50px;
   }
 
   .canvas-hint {
-    bottom: 48px;
-    max-width: 250px;
-    font-size: 0.64rem;
+    bottom: 46px;
+    max-width: 240px;
+    font-size: 0.6rem;
   }
 
   .weapon-bar {
-    left: 10px;
-    right: 10px;
-    bottom: 10px;
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
   }
 
   .notes-panel {

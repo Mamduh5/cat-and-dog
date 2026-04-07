@@ -67,7 +67,7 @@ function renderSidePanel(preset) {
 
       <div class="panel notes-panel compact-panel">
         <p class="panel-title">Match Notes</p>
-        <p id="matchNote">Outside panels are optional. The shared battle HUD lives inside the gameplay surface on every device.</p>
+        <p id="matchNote">Shared battle HUD inside the gameplay surface. Outside panels stay secondary.</p>
       </div>
     </aside>
   `;
@@ -102,9 +102,7 @@ export function renderShell(preset) {
 
           <div class="overlay menu-overlay" id="menuOverlay">
             <div class="overlay-card menu-card">
-              <p class="menu-kicker">Original Turn-Based Projectile Duel</p>
               <h2>Backyard Ballistics</h2>
-              <p class="menu-subtitle">Read the wind. Pick the right shot.</p>
 
               <div class="menu-actions" id="menuActions">
                 <button class="action-button" id="playCpuButton">Play vs CPU</button>
@@ -118,7 +116,7 @@ export function renderShell(preset) {
                   <button class="segment-button" data-difficulty="normal">Normal</button>
                   <button class="segment-button" data-difficulty="hard">Hard</button>
                 </div>
-                <p class="difficulty-copy" id="difficultyCopy">Forgiving aim, slower throws, and wider misses.</p>
+                <p class="difficulty-copy" id="difficultyCopy">Solid read, believable mistakes.</p>
                 <div class="button-row menu-subactions">
                   <button class="action-button" id="startCpuButton">Start CPU Match</button>
                   <button class="ghost-button" id="cpuBackButton">Back</button>
