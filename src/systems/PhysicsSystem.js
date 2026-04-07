@@ -36,17 +36,20 @@ export class PhysicsSystem {
     const shot = CONFIG.projectileTypes[prepared.shotKey];
     const spawn = player.getLaunchPoint();
     const angle = prepared.angle * Math.PI / 180;
+    const launchSpeed = prepared.power * shot.launchSpeedMultiplier;
 
     game.projectile = new Projectile({
       x: spawn.x,
       y: spawn.y,
-      vx: Math.cos(angle) * prepared.power * shot.speedScale * player.facing,
-      vy: -Math.sin(angle) * prepared.power * shot.speedScale,
+      vx: Math.cos(angle) * launchSpeed * player.facing,
+      vy: -Math.sin(angle) * launchSpeed,
       ownerId: player.id,
       shotKey: prepared.shotKey,
       shot
     });
 
+    player.consumeAmmo(prepared.shotKey);
+    player.ensureSelectableShot();
     player.setRecoil(shot.recoil);
     game.state.preparedThrow = null;
     game.state.phase = "projectile";
@@ -78,8 +81,8 @@ export class PhysicsSystem {
     const stepDt = dt / steps;
 
     for (let step = 0; step < steps; step += 1) {
-      projectile.transform.vx += game.state.wind * projectile.shot.windScale * stepDt;
-      projectile.transform.vy += CONFIG.world.gravity * projectile.shot.gravityScale * stepDt;
+      projectile.transform.vx += game.state.wind * projectile.shot.windInfluenceMultiplier * stepDt;
+      projectile.transform.vy += CONFIG.world.gravity * projectile.shot.gravityMultiplier * stepDt;
       projectile.transform.x += projectile.transform.vx * stepDt;
       projectile.transform.y += projectile.transform.vy * stepDt;
       projectile.age += stepDt;

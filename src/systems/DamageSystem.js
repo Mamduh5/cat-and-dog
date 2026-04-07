@@ -36,7 +36,7 @@ export class DamageSystem {
       let damage = 0;
 
       if (direct) {
-        damage = shot.damageMax + shot.directBonus;
+        damage = shot.directDamage ?? shot.damageMax + shot.directBonus;
         wasDirect = true;
       } else if (dist <= shot.splashRadius) {
         const ratio = 1 - dist / shot.splashRadius;
@@ -69,5 +69,38 @@ export class DamageSystem {
     game.state.phase = "turn-end";
     game.state.turnTimer = game.state.pendingGameOver ? CONFIG.turn.endPause : CONFIG.turn.impactPause;
     game.state.hint = wasDirect ? "Clean direct hit." : highestDamage > 0 ? "Splash damage landed." : "Missed clean. Wind will change next turn.";
+  }
+
+  useHeal(game, player) {
+    const healItem = CONFIG.items.heal;
+    const healAmount = Math.round(player.health.max * healItem.healRatio);
+    const actual = player.heal(healAmount);
+    if (actual <= 0) {
+      return 0;
+    }
+
+    player.consumeAmmo("heal");
+    const anchor = player.getDamageAnchor();
+    game.shockwaves.push(new Shockwave({ x: anchor.x, y: anchor.y, toRadius: 44, color: "rgba(182, 255, 204," }));
+    game.floatingTexts.push(new FloatingText({ x: anchor.x, y: anchor.y - 18, text: `+${actual}`, color: "#dbffdf", size: 24, rise: 34 }));
+
+    for (let index = 0; index < 18; index += 1) {
+      const angle = randRange(0, Math.PI * 2);
+      const force = randRange(48, 122);
+      game.particles.push(new Particle({
+        x: anchor.x,
+        y: anchor.y,
+        vx: Math.cos(angle) * force,
+        vy: Math.sin(angle) * force - randRange(18, 70),
+        life: randRange(0.26, 0.58),
+        radius: randRange(2.6, 5.4),
+        color: index % 2 === 0 ? healItem.coreColor : "#d7ffe0",
+        gravityScale: 0.32,
+        fadeScale: 1.1
+      }));
+    }
+
+    game.state.hint = `${player.name} recovered ${actual} HP.`;
+    return actual;
   }
 }

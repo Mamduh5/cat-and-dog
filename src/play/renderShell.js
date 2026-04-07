@@ -1,3 +1,33 @@
+import { WEAPON_BAR_ORDER } from "../utils/helpers.js";
+
+const WEAPON_META = {
+  normal: { label: "Normal", note: "Ball", iconClass: "weapon-icon-normal" },
+  light: { label: "Light", note: "Stick", iconClass: "weapon-icon-light" },
+  heavy: { label: "Heavy", note: "Rock", iconClass: "weapon-icon-heavy" },
+  super: { label: "Super", note: "Rocket", iconClass: "weapon-icon-super" },
+  heal: { label: "Heal", note: "+35%", iconClass: "weapon-icon-heal" }
+};
+
+function renderWeaponBar() {
+  return `
+    <div class="weapon-bar" aria-label="Battle weapon bar">
+      ${WEAPON_BAR_ORDER.map((key) => {
+        const meta = WEAPON_META[key];
+        return `
+          <button class="weapon-bar-button weapon-${key}" data-weapon-key="${key}" type="button">
+            <span class="weapon-icon ${meta.iconClass}">${key === "heal" ? "+" : ""}</span>
+            <span class="weapon-copy">
+              <span class="weapon-label">${meta.label}</span>
+              <span class="weapon-note" data-weapon-note>${meta.note}</span>
+            </span>
+            <span class="weapon-count" data-weapon-count>${key === "normal" ? "INF" : "1"}</span>
+          </button>
+        `;
+      }).join("")}
+    </div>
+  `;
+}
+
 function renderTouchControls(preset) {
   if (!preset.touch) {
     return "";
@@ -7,12 +37,10 @@ function renderTouchControls(preset) {
     <section class="panel touch-controls" aria-label="Touch Controls">
       <div class="touch-header">
         <p class="panel-title touch-title">Touch Play</p>
-        <span class="touch-note">Drag from the throwing hand to aim. Release to fire.</span>
+        <span class="touch-note">Aim with drag. The weapon bar stays inside the arena.</span>
       </div>
 
       <div class="touch-grid touch-grid-actions">
-        <button class="touch-button touch-button-secondary" data-input-code="KeyQ" data-input-mode="tap">Shot Prev</button>
-        <button class="touch-button touch-button-secondary" data-input-code="KeyE" data-input-mode="tap">Shot Next</button>
         <button class="touch-button" data-input-code="KeyR" data-input-mode="tap">Restart</button>
       </div>
     </section>
@@ -75,6 +103,7 @@ export function renderShell(preset) {
       <section class="play-frame">
         <div class="panel canvas-wrap">
           <canvas id="gameCanvas" width="960" height="540" aria-label="Backyard Ballistics game canvas"></canvas>
+          ${renderWeaponBar()}
 
           <div class="turn-banner hidden" id="turnBanner" aria-live="polite">
             <p class="turn-banner-label" id="turnBannerLabel">Get Ready</p>
@@ -124,17 +153,19 @@ export function renderShell(preset) {
             <ul class="controls-list">
               <li><span>Aim</span><strong>${preset.touch ? "Drag back from hand, release to fire" : "Left / Right or A / D"}</strong></li>
               <li><span>Power</span><strong>${preset.touch ? "Pull farther for more power" : "Up / Down or W / S"}</strong></li>
-              <li><span>Projectile</span><strong>Q / E or 1 / 2 / 3</strong></li>
+              <li><span>Weapons</span><strong>1-4 attacks, 5 heal, or tap the arena bar</strong></li>
               <li><span>Throw</span><strong>${preset.touch ? "Release drag" : "Space or Enter"}</strong></li>
               <li><span>Restart / Menu</span><strong>R / M</strong></li>
             </ul>
           </div>
 
           <div class="panel notes-panel">
-            <p class="panel-title">Shot Types</p>
-            <p><strong>Normal:</strong> reliable all-round shot with balanced speed and damage.</p>
-            <p><strong>Heavy:</strong> stronger blast and heavier drop. Best when your read is precise.</p>
-            <p><strong>Light:</strong> flatter, easier arc with lighter damage and knock.</p>
+            <p class="panel-title">Arsenal</p>
+            <p><strong>Normal:</strong> unlimited balanced ball and your default benchmark.</p>
+            <p><strong>Light:</strong> 5 sticks with easier reach and lighter damage.</p>
+            <p><strong>Heavy:</strong> 3 rocks with stronger impact and more drop.</p>
+            <p><strong>Super:</strong> 1 rocket with half-HP direct damage.</p>
+            <p><strong>Heal:</strong> 1 instant recovery action worth 35% max HP.</p>
           </div>
 
           <div class="panel notes-panel compact-panel">

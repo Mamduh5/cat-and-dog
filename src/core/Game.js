@@ -64,6 +64,9 @@ export class Game {
       onMenu: () => this.showMenu(),
       onDifficulty: (level) => this.setDifficulty(level)
     });
+    this.ui.bindBattleControls({
+      onWeaponSelect: (key) => this.turnSystem.handleWeaponSelection(this, key)
+    });
     this.ui.bindTouchControls(this.input);
     this.input.bindAimSurface(canvas, this.preset.touch);
 
@@ -100,7 +103,7 @@ export class Game {
   finishGame() {
     const alivePlayers = this.players.filter((player) => player.health.current > 0);
     const title = alivePlayers.length === 1 ? `${alivePlayers[0].name} Wins` : "Draw";
-    const subtitle = alivePlayers.length === 1 ? "A sharper read of wind and timing settled the round." : "Both fighters dropped at once. Run it back.";
+    const subtitle = alivePlayers.length === 1 ? "A sharper read of wind, range, and resources settled the round." : "Both fighters dropped at once. Run it back.";
     this.state.hint = "Press Play Again for another round.";
     this.endScene.enter(this, title, subtitle);
   }

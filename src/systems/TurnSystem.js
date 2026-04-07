@@ -1,5 +1,5 @@
 import { CONFIG } from "../config.js";
-import { SHOT_ORDER, cycleList } from "../utils/helpers.js";
+import { ATTACK_ORDER, cycleList } from "../utils/helpers.js";
 import { clamp, distance, lerp, randRange } from "../utils/math.js";
 
 export class TurnSystem {
@@ -10,6 +10,7 @@ export class TurnSystem {
     game.state.currentPlayerIndex = 0;
     game.state.pendingGameOver = false;
     game.state.preparedThrow = null;
+    game.state.cpuPlan = null;
     game.state.clearDragAim();
     game.clearTransientEffects();
     game.players[0].name = "P1 Cat";
@@ -28,7 +29,10 @@ export class TurnSystem {
     if (game.state.phase === "aiming") {
       if (game.isCpuTurn()) {
         game.state.cpuTimer -= dt;
-        if (game.state.cpuTimer <= 0) this.tryShoot(game, true);
+        if (game.state.cpuTimer <= 0) {
+          if (game.state.cpuPlan?.action === "heal") this.useHeal(game, true);
+          else this.tryShoot(game, true);
+        }
       } else {
         this.updateAim(game, dt);
       }
@@ -57,17 +61,25 @@ export class TurnSystem {
 
   enterAiming(game) {
     const player = game.getCurrentPlayer();
+    player.ensureSelectableShot();
     game.state.phase = "aiming";
     game.state.hideBanner();
     game.state.clearDragAim();
+    game.state.cpuPlan = null;
 
     if (game.isCpuTurn()) {
       const plan = game.aiSystem.chooseShot(game);
-      player.weapon.shotType = plan.shotKey;
-      player.aim.angle = plan.angle;
-      player.aim.power = plan.power;
-      game.state.cpuTimer = plan.delay;
-      game.state.hint = `${player.name} is reading the wind...`;
+      game.state.cpuPlan = plan;
+      if (plan.action === "heal") {
+        game.state.cpuTimer = plan.delay;
+        game.state.hint = `${player.name} is deciding whether to patch up.`;
+      } else {
+        player.weapon.shotType = plan.shotKey;
+        player.aim.angle = plan.angle;
+        player.aim.power = plan.power;
+        game.state.cpuTimer = plan.delay;
+        game.state.hint = `${player.name} is reading the wind...`;
+      }
     } else if (game.preset.touch) {
       game.state.hint = "Drag back from the throwing hand, then release to fire.";
     } else {
@@ -104,11 +116,21 @@ export class TurnSystem {
     if (code === "ArrowRight" || code === "KeyD") this.adjustAim(game, "angle", CONFIG.aim.angleTap);
     if (code === "ArrowUp" || code === "KeyW") this.adjustAim(game, "power", CONFIG.aim.powerTap);
     if (code === "ArrowDown" || code === "KeyS") this.adjustAim(game, "power", -CONFIG.aim.powerTap);
-    if (code === "KeyQ") this.setShotType(game, cycleList(SHOT_ORDER, game.getCurrentPlayer().weapon.shotType, -1));
-    if (code === "KeyE") this.setShotType(game, cycleList(SHOT_ORDER, game.getCurrentPlayer().weapon.shotType, 1));
+    if (code === "KeyQ") this.setShotType(game, this.cycleAvailableShot(game.getCurrentPlayer(), -1));
+    if (code === "KeyE") this.setShotType(game, this.cycleAvailableShot(game.getCurrentPlayer(), 1));
     if (code === "Digit1") this.setShotType(game, "normal");
-    if (code === "Digit2") this.setShotType(game, "heavy");
-    if (code === "Digit3") this.setShotType(game, "light");
+    if (code === "Digit2") this.setShotType(game, "light");
+    if (code === "Digit3") this.setShotType(game, "heavy");
+    if (code === "Digit4") this.setShotType(game, "super");
+    if (code === "Digit5") this.useHeal(game, false);
+  }
+
+  handleWeaponSelection(game, key) {
+    if (key === "heal") {
+      this.useHeal(game, false);
+      return;
+    }
+    this.setShotType(game, key);
   }
 
   handlePointer(game, event) {
@@ -150,6 +172,17 @@ export class TurnSystem {
     }
   }
 
+  cycleAvailableShot(player, direction) {
+    const available = ATTACK_ORDER.filter((key) => player.hasAmmo(key));
+    if (available.length === 0) {
+      return "normal";
+    }
+    if (!available.includes(player.weapon.shotType)) {
+      return available[0];
+    }
+    return cycleList(available, player.weapon.shotType, direction);
+  }
+
   adjustAim(game, type, amount) {
     const player = game.getCurrentPlayer();
     if (type === "angle") player.aim.angle = clamp(player.aim.angle + amount, CONFIG.aim.angleMin, CONFIG.aim.angleMax);
@@ -158,16 +191,61 @@ export class TurnSystem {
 
   setShotType(game, shotKey) {
     const player = game.getCurrentPlayer();
+    if (game.state.phase !== "aiming" || game.isCpuTurn()) {
+      return;
+    }
+    if (!ATTACK_ORDER.includes(shotKey)) {
+      return;
+    }
+    if (!player.hasAmmo(shotKey)) {
+      game.state.hint = `${CONFIG.projectileTypes[shotKey].label} is out of ammo.`;
+      return;
+    }
     player.weapon.shotType = shotKey;
     game.state.hint = game.preset.touch
-      ? `${player.name} switched to ${CONFIG.projectileTypes[shotKey].label.toLowerCase()} shot. Drag and release to fire.`
-      : `${player.name} switched to ${CONFIG.projectileTypes[shotKey].label.toLowerCase()} shot.`;
+      ? `${player.name} switched to ${CONFIG.projectileTypes[shotKey].label.toLowerCase()}. Drag and release to fire.`
+      : `${player.name} switched to ${CONFIG.projectileTypes[shotKey].label.toLowerCase()}.`;
+  }
+
+  useHeal(game, force) {
+    if (game.state.phase !== "aiming" || (!force && game.isCpuTurn())) {
+      return;
+    }
+
+    const player = game.getCurrentPlayer();
+    if (!player.hasAmmo("heal")) {
+      game.state.hint = "Heal has already been used.";
+      return;
+    }
+    if (player.health.current >= player.health.max) {
+      game.state.hint = `${player.name} is already at full HP.`;
+      return;
+    }
+
+    game.state.clearDragAim();
+    game.state.cpuPlan = null;
+    const healed = game.damageSystem.useHeal(game, player);
+    if (healed <= 0) {
+      game.state.hint = `${player.name} could not recover any more HP.`;
+      return;
+    }
+
+    player.ensureSelectableShot();
+    game.state.phase = "turn-end";
+    game.state.pendingGameOver = false;
+    game.state.turnTimer = CONFIG.turn.healPause;
   }
 
   tryShoot(game, force) {
     if (game.state.phase !== "aiming" || (!force && game.isCpuTurn())) return;
 
     const player = game.getCurrentPlayer();
+    player.ensureSelectableShot();
+    if (!player.hasAmmo(player.weapon.shotType)) {
+      game.state.hint = `${CONFIG.projectileTypes[player.weapon.shotType].label} is out of ammo.`;
+      return;
+    }
+
     const shot = CONFIG.projectileTypes[player.weapon.shotType];
     game.state.preparedThrow = {
       playerIndex: game.state.currentPlayerIndex,
@@ -175,6 +253,7 @@ export class TurnSystem {
       power: player.aim.power,
       shotKey: player.weapon.shotType
     };
+    game.state.cpuPlan = null;
     game.state.clearDragAim();
     player.setAnticipation(shot.windup);
     game.state.phase = "windup";
@@ -189,6 +268,7 @@ export class TurnSystem {
     game.state.turnTimer = CONFIG.turn.readyPause;
     game.state.pendingGameOver = false;
     game.state.preparedThrow = null;
+    game.state.cpuPlan = null;
     game.state.clearDragAim();
     game.projectile = null;
     game.state.wind = clamp(
@@ -196,6 +276,7 @@ export class TurnSystem {
       -CONFIG.world.maxWind,
       CONFIG.world.maxWind
     );
+    player.ensureSelectableShot();
     player.aim.angle = clamp(player.aim.angle, CONFIG.aim.angleMin, CONFIG.aim.angleMax);
     player.aim.power = clamp(player.aim.power, CONFIG.aim.powerMin, CONFIG.aim.powerMax);
     game.state.showBanner("Get Ready", `${player.name} Up`);
@@ -208,6 +289,7 @@ export class TurnSystem {
     }
 
     const player = game.getCurrentPlayer();
+    player.ensureSelectableShot();
     const launch = player.getLaunchPoint();
     const anchor = player.getDamageAnchor();
     const withinLaunch = distance(event.x, event.y, launch.x, launch.y) <= CONFIG.touch.pickupRadius;

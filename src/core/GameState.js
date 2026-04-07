@@ -9,6 +9,7 @@ export class GameState {
     this.turnTimer = 0;
     this.pendingGameOver = false;
     this.cpuTimer = 0;
+    this.cpuPlan = null;
     this.preparedThrow = null;
     this.screenShake = 0;
     this.hint = "Choose a mode to start a new match.";

@@ -187,6 +187,147 @@ canvas {
   background: linear-gradient(180deg, #d9f0ff, #f7f1d8 70%, #87be68 70%);
 }
 
+.weapon-bar {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.weapon-bar-button {
+  min-width: 0;
+  border: 0;
+  border-radius: 18px;
+  padding: 9px 10px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 8px;
+  background: rgba(18, 32, 49, 0.84);
+  color: white;
+  box-shadow: 0 10px 20px rgba(13, 24, 42, 0.24), inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+}
+
+.weapon-bar-button.is-active {
+  background: rgba(27, 55, 84, 0.94);
+  box-shadow: 0 0 0 2px rgba(255, 225, 153, 0.7), 0 12px 22px rgba(13, 24, 42, 0.28);
+}
+
+.weapon-bar-button.is-disabled,
+.weapon-bar-button:disabled {
+  opacity: 0.42;
+  cursor: default;
+}
+
+.weapon-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.weapon-label {
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.weapon-note {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.weapon-count {
+  min-width: 34px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.weapon-icon {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  display: inline-block;
+  flex: 0 0 auto;
+}
+
+.weapon-icon-normal {
+  border-radius: 50%;
+  background: #f3b14c;
+  box-shadow: inset -3px -3px 0 rgba(0, 0, 0, 0.18);
+}
+
+.weapon-icon-light {
+  width: 22px;
+  height: 5px;
+  border-radius: 999px;
+  background: #7fd0eb;
+  transform: rotate(-24deg);
+}
+
+.weapon-icon-heavy {
+  background: #d8783b;
+  clip-path: polygon(24% 4%, 78% 10%, 96% 44%, 84% 92%, 34% 100%, 2% 62%);
+}
+
+.weapon-icon-super {
+  width: 22px;
+  height: 14px;
+  margin-left: -1px;
+  background: #ef6b52;
+  clip-path: polygon(0 28%, 58% 28%, 58% 0, 100% 50%, 58% 100%, 58% 72%, 0 72%);
+}
+
+.weapon-icon-super::after {
+  content: "";
+  position: absolute;
+  left: -5px;
+  top: 4px;
+  width: 6px;
+  height: 6px;
+  background: #ffd98a;
+  clip-path: polygon(0 50%, 100% 0, 100% 100%);
+}
+
+.weapon-icon-heal {
+  border-radius: 50%;
+  background: #6fcb87;
+  color: #14321c;
+  font-size: 16px;
+  line-height: 20px;
+  text-align: center;
+  font-weight: 900;
+}
+
+.weapon-normal {
+  border-bottom: 3px solid rgba(255, 223, 143, 0.86);
+}
+
+.weapon-light {
+  border-bottom: 3px solid rgba(170, 235, 255, 0.86);
+}
+
+.weapon-heavy {
+  border-bottom: 3px solid rgba(255, 186, 119, 0.86);
+}
+
+.weapon-super {
+  border-bottom: 3px solid rgba(255, 171, 146, 0.9);
+}
+
+.weapon-heal {
+  border-bottom: 3px solid rgba(181, 255, 196, 0.86);
+}
+
 .turn-banner {
   position: absolute;
   top: 18px;
@@ -224,7 +365,7 @@ canvas {
   position: absolute;
   left: 16px;
   right: 16px;
-  bottom: 16px;
+  bottom: 98px;
   padding: 10px 12px;
   border-radius: 14px;
   background: rgba(255, 251, 242, 0.8);
@@ -408,18 +549,8 @@ canvas {
   touch-action: manipulation;
 }
 
-.touch-button-primary {
-  color: white;
-  background: linear-gradient(135deg, #ec8351, #da5a27);
-}
-
-.touch-button-secondary {
-  color: white;
-  background: linear-gradient(135deg, #4d96df, #2f75c0);
-}
-
 .touch-grid-actions {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: 1fr;
 }
 
 .device-desktop .hud {
@@ -506,11 +637,6 @@ body.device-mobile {
   display: none;
 }
 
-.device-mobile .touch-button {
-  min-height: 64px;
-  font-size: 1rem;
-}
-
 .device-mobile .overlay-card {
   width: calc(100% - 12px);
   padding: 18px;
@@ -548,6 +674,26 @@ body.device-mobile {
   }
 }
 
+@media (max-width: 700px) {
+  .weapon-bar {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .weapon-bar-button {
+    grid-template-columns: auto 1fr;
+  }
+
+  .weapon-count {
+    grid-column: 1 / -1;
+    justify-self: start;
+    margin-left: 28px;
+  }
+
+  .canvas-hint {
+    bottom: 154px;
+  }
+}
+
 @media (max-width: 640px) {
   .hud {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -568,8 +714,26 @@ body.device-mobile {
     flex-direction: column;
     align-items: flex-start;
   }
+}
 
-  .touch-grid-actions {
-    grid-template-columns: 1fr;
+@media (max-width: 520px) {
+  .weapon-bar {
+    left: 12px;
+    right: 12px;
+    gap: 6px;
+  }
+
+  .weapon-bar-button {
+    padding: 8px;
+    border-radius: 16px;
+  }
+
+  .weapon-label {
+    font-size: 0.76rem;
+  }
+
+  .weapon-note,
+  .weapon-count {
+    font-size: 0.68rem;
   }
 }

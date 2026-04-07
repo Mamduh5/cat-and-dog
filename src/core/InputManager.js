@@ -21,6 +21,8 @@ export class InputManager {
       "Digit1",
       "Digit2",
       "Digit3",
+      "Digit4",
+      "Digit5",
       "KeyR",
       "KeyM"
     ]);

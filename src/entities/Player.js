@@ -1,6 +1,7 @@
 import { CONFIG } from "../config.js";
 import { HealthComponent } from "../components/HealthComponent.js";
 import { TransformComponent } from "../components/TransformComponent.js";
+import { ATTACK_ORDER } from "../utils/helpers.js";
 import { DEG_TO_RAD, clamp } from "../utils/math.js";
 
 export class Player {
@@ -22,10 +23,21 @@ export class Player {
     };
     this.weapon = {
       shotType: "normal",
+      ammo: this.createAmmoState(),
       anticipationTimer: 0,
       anticipationDuration: 0.001,
       recoilTimer: 0,
       recoilDuration: 0.001
+    };
+  }
+
+  createAmmoState() {
+    return {
+      normal: CONFIG.projectileTypes.normal.ammo,
+      light: CONFIG.projectileTypes.light.ammo,
+      heavy: CONFIG.projectileTypes.heavy.ammo,
+      super: CONFIG.projectileTypes.super.ammo,
+      heal: CONFIG.items.heal.ammo
     };
   }
 
@@ -34,6 +46,7 @@ export class Player {
     this.aim.angle = CONFIG.aim.defaultAngle;
     this.aim.power = CONFIG.aim.defaultPower;
     this.weapon.shotType = "normal";
+    this.weapon.ammo = this.createAmmoState();
     this.render.flashTimer = 0;
     this.weapon.anticipationTimer = 0;
     this.weapon.recoilTimer = 0;
@@ -49,6 +62,38 @@ export class Player {
   takeDamage(amount) {
     this.health.current = clamp(this.health.current - amount, 0, this.health.max);
     this.render.flashTimer = 0.34;
+  }
+
+  heal(amount) {
+    const before = this.health.current;
+    this.health.current = clamp(this.health.current + amount, 0, this.health.max);
+    return this.health.current - before;
+  }
+
+  hasAmmo(key) {
+    const amount = this.weapon.ammo[key];
+    return !Number.isFinite(amount) || amount > 0;
+  }
+
+  getAmmo(key) {
+    return this.weapon.ammo[key];
+  }
+
+  consumeAmmo(key) {
+    const amount = this.weapon.ammo[key];
+    if (Number.isFinite(amount) && amount > 0) {
+      this.weapon.ammo[key] -= 1;
+    }
+  }
+
+  ensureSelectableShot() {
+    if (ATTACK_ORDER.includes(this.weapon.shotType) && this.hasAmmo(this.weapon.shotType)) {
+      return this.weapon.shotType;
+    }
+
+    const next = ATTACK_ORDER.find((key) => this.hasAmmo(key)) || "normal";
+    this.weapon.shotType = next;
+    return next;
   }
 
   setAnticipation(duration) {

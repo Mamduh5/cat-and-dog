@@ -1,6 +1,6 @@
 import { CONFIG } from "../config.js";
 import { DOM_IDS, DIFFICULTY_SELECTOR } from "../core/AssetRefs.js";
-import { setText, signLabel } from "../utils/helpers.js";
+import { ATTACK_ORDER, formatAmmoCount, setText, signLabel, WEAPON_BAR_ORDER } from "../utils/helpers.js";
 
 export class UISystem {
   constructor() {
@@ -10,6 +10,7 @@ export class UISystem {
     }
     this.difficultyButtons = Array.from(document.querySelectorAll(DIFFICULTY_SELECTOR));
     this.touchButtons = Array.from(document.querySelectorAll("[data-input-code]"));
+    this.weaponButtons = Array.from(document.querySelectorAll("[data-weapon-key]"));
   }
 
   bindMenuControls(handlers) {
@@ -19,6 +20,12 @@ export class UISystem {
     this.refs.menuButton.addEventListener("click", handlers.onMenu);
     this.difficultyButtons.forEach((button) => {
       button.addEventListener("click", () => handlers.onDifficulty(button.dataset.difficulty));
+    });
+  }
+
+  bindBattleControls(handlers) {
+    this.weaponButtons.forEach((button) => {
+      button.addEventListener("click", () => handlers.onWeaponSelect(button.dataset.weaponKey));
     });
   }
 
@@ -60,10 +67,31 @@ export class UISystem {
     this.refs.endOverlay.classList.remove("hidden");
   }
 
+  updateWeaponBar(game, current) {
+    this.weaponButtons.forEach((button) => {
+      const key = button.dataset.weaponKey;
+      const isHeal = key === "heal";
+      const countNode = button.querySelector("[data-weapon-count]");
+      const noteNode = button.querySelector("[data-weapon-note]");
+      const count = current.getAmmo(key);
+      const config = isHeal ? CONFIG.items.heal : CONFIG.projectileTypes[key];
+      button.classList.toggle("is-active", !isHeal && current.weapon.shotType === key && game.state.phase === "aiming");
+      button.classList.toggle("is-disabled", !current.hasAmmo(key));
+      button.disabled = !current.hasAmmo(key);
+      if (countNode) {
+        setText(countNode, formatAmmoCount(count));
+      }
+      if (noteNode) {
+        setText(noteNode, isHeal ? `+${Math.round(current.health.max * config.healRatio)}` : config.label);
+      }
+    });
+  }
+
   update(game) {
     const { state, players } = game;
     const current = players[state.currentPlayerIndex] || players[0];
     const shot = CONFIG.projectileTypes[current.weapon.shotType];
+    const shotAmmo = current.getAmmo(current.weapon.shotType);
 
     this.setModeLabel(state.mode, state.cpuDifficulty);
     setText(this.refs.p1Label, players[0].name);
@@ -75,9 +103,10 @@ export class UISystem {
     setText(this.refs.angleValue, `${Math.round(current.aim.angle)} deg`);
     setText(this.refs.powerValue, `${Math.round(current.aim.power)}`);
     setText(this.refs.shotValue, shot.label);
-    setText(this.refs.shotNote, shot.note);
+    setText(this.refs.shotNote, `${shot.note} / ${formatAmmoCount(shotAmmo)} left`);
     setText(this.refs.windValue, `${signLabel(state.wind)} ${Math.round(Math.abs(state.wind))}`);
     setText(this.refs.canvasHint, state.hint);
+    this.updateWeaponBar(game, current);
 
     if (!state.mode) {
       setText(this.refs.turnValue, "Waiting");
@@ -96,13 +125,13 @@ export class UISystem {
       setText(this.refs.turnSubtext, "Preparing the next turn.");
     } else if (game.isCpuTurn()) {
       setText(this.refs.turnValue, current.name);
-      setText(this.refs.turnSubtext, `${CONFIG.cpuProfiles[state.cpuDifficulty].label} CPU is lining up a shot.`);
+      setText(this.refs.turnSubtext, `${CONFIG.cpuProfiles[state.cpuDifficulty].label} CPU is lining up a play.`);
     } else if (game.preset.touch) {
       setText(this.refs.turnValue, current.name);
-      setText(this.refs.turnSubtext, "Drag from the hand to aim, release to fire.");
+      setText(this.refs.turnSubtext, "Drag to aim, tap the weapon bar to switch or heal.");
     } else {
       setText(this.refs.turnValue, current.name);
-      setText(this.refs.turnSubtext, "Adjust, choose projectile, and fire.");
+      setText(this.refs.turnSubtext, "Adjust, switch weapons, and fire.");
     }
 
     this.refs.turnBanner.classList.toggle("hidden", !state.banner.visible);

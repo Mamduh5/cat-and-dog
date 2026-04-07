@@ -1,5 +1,5 @@
 import { CONFIG } from "../config.js";
-import { signLabel } from "../utils/helpers.js";
+import { formatAmmoCount, signLabel } from "../utils/helpers.js";
 import { easeOutCubic, lerp } from "../utils/math.js";
 
 export class Renderer {
@@ -182,13 +182,13 @@ export class Renderer {
     const angle = player.aim.angle * Math.PI / 180;
     let x = start.x;
     let y = start.y;
-    let vx = Math.cos(angle) * player.aim.power * shot.speedScale * player.facing;
-    let vy = -Math.sin(angle) * player.aim.power * shot.speedScale;
+    let vx = Math.cos(angle) * player.aim.power * shot.launchSpeedMultiplier * player.facing;
+    let vy = -Math.sin(angle) * player.aim.power * shot.launchSpeedMultiplier;
     const dragging = Boolean(game.state.dragAim);
     ctx.save();
     for (let step = 0; step < (dragging ? 25 : 22); step += 1) {
-      vx += game.state.wind * shot.windScale * 0.055;
-      vy += CONFIG.world.gravity * shot.gravityScale * 0.055;
+      vx += game.state.wind * shot.windInfluenceMultiplier * 0.055;
+      vy += CONFIG.world.gravity * shot.gravityMultiplier * 0.055;
       x += vx * 0.055;
       y += vy * 0.055;
       ctx.globalAlpha = Math.max(0.14, (dragging ? 0.88 : 0.7) - step * (dragging ? 0.026 : 0.03));
@@ -231,10 +231,7 @@ export class Renderer {
     ctx.arc(drag.anchorX, drag.anchorY, 14, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.fillStyle = shot.coreColor;
-    ctx.beginPath();
-    ctx.arc(drag.anchorX, drag.anchorY, 7, 0, Math.PI * 2);
-    ctx.fill();
+    this.drawWeaponShape(ctx, shot.shape, drag.anchorX, drag.anchorY, 0, 0.8, shot.coreColor, shot.ringColor);
 
     ctx.fillStyle = drag.canFire ? "rgba(19, 41, 63, 0.92)" : "rgba(86, 54, 35, 0.9)";
     ctx.beginPath();
@@ -367,20 +364,77 @@ export class Renderer {
       const alpha = (index + 1) / projectile.trail.length;
       ctx.fillStyle = projectile.shot.trailColor.replace(/0\.\d+\)$/u, `${(alpha * 0.35).toFixed(2)})`);
       ctx.beginPath();
-      ctx.arc(point.x, point.y, 1.6 + alpha * 2.3, 0, Math.PI * 2);
+      ctx.arc(point.x, point.y, 1.4 + alpha * 2.1, 0, Math.PI * 2);
       ctx.fill();
     }
-    const { x, y } = projectile.transform;
-    const gradient = ctx.createRadialGradient(x - 2, y - 2, 2, x, y, projectile.shot.radius + 4);
-    gradient.addColorStop(0, "#fff9e9");
-    gradient.addColorStop(1, projectile.shot.coreColor);
-    ctx.fillStyle = gradient;
-    ctx.beginPath();
-    ctx.arc(x, y, projectile.shot.radius, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = "rgba(111, 57, 14, 0.35)";
+
+    const { x, y, vx, vy } = projectile.transform;
+    const angle = Math.atan2(vy, vx || 0.001);
+    this.drawWeaponShape(ctx, projectile.shot.shape, x, y, angle, 1, projectile.shot.coreColor, projectile.shot.ringColor);
+  }
+
+  drawWeaponShape(ctx, shape, x, y, rotation, scale, fillColor, strokeColor) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(rotation);
+    ctx.scale(scale, scale);
+    ctx.fillStyle = fillColor;
+    ctx.strokeStyle = strokeColor;
     ctx.lineWidth = 2;
-    ctx.stroke();
+
+    if (shape === "ball") {
+      ctx.beginPath();
+      ctx.arc(0, 0, 7, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    } else if (shape === "stick") {
+      ctx.lineWidth = 4;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(-10, 0);
+      ctx.lineTo(10, 0);
+      ctx.stroke();
+      ctx.fillStyle = "rgba(255,255,255,0.35)";
+      ctx.beginPath();
+      ctx.arc(-7, -1, 1.5, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (shape === "rock") {
+      ctx.beginPath();
+      ctx.moveTo(-9, -3);
+      ctx.lineTo(-4, -9);
+      ctx.lineTo(6, -8);
+      ctx.lineTo(10, -1);
+      ctx.lineTo(6, 8);
+      ctx.lineTo(-6, 9);
+      ctx.lineTo(-10, 2);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    } else if (shape === "rocket") {
+      ctx.fillStyle = fillColor;
+      ctx.beginPath();
+      ctx.moveTo(-10, -4);
+      ctx.lineTo(4, -4);
+      ctx.lineTo(10, 0);
+      ctx.lineTo(4, 4);
+      ctx.lineTo(-10, 4);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#ffd98a";
+      ctx.beginPath();
+      ctx.moveTo(-10, -3);
+      ctx.lineTo(-14, 0);
+      ctx.lineTo(-10, 3);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = "#fff7cf";
+      ctx.beginPath();
+      ctx.arc(0, 0, 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.restore();
   }
 
   drawParticle(ctx, particle) {
@@ -419,9 +473,10 @@ export class Renderer {
     const player = game.getCurrentPlayer();
     const shot = CONFIG.projectileTypes[player.weapon.shotType];
     const turnLabel = game.state.phase === "gameover" ? "Match Over" : player.name;
+    const ammoText = formatAmmoCount(player.getAmmo(player.weapon.shotType));
 
-    this.drawInfoCard(ctx, 18, 18, 182, 58, "Projectile", shot.label, shot.coreColor, shot.ringColor, shot.label.charAt(0));
-    this.drawInfoCard(ctx, this.canvas.width - 200, 18, 182, 58, "Turn", turnLabel, "#2f75c0", "rgba(122, 182, 255, 0.95)", null);
+    this.drawInfoCard(ctx, 18, 18, 194, 58, "Projectile", `${shot.label} ${ammoText}`, shot.shape, shot.coreColor, shot.ringColor);
+    this.drawInfoCard(ctx, this.canvas.width - 206, 18, 188, 58, "Turn", turnLabel, null, "#2f75c0", "rgba(122, 182, 255, 0.95)");
 
     if (game.state.dragAim) {
       const drag = game.state.dragAim;
@@ -431,7 +486,7 @@ export class Renderer {
     }
   }
 
-  drawInfoCard(ctx, x, y, width, height, label, value, coreColor, accentColor, iconText) {
+  drawInfoCard(ctx, x, y, width, height, label, value, shape, coreColor, accentColor) {
     ctx.save();
     ctx.fillStyle = "rgba(16, 31, 48, 0.76)";
     this.fillRoundedRect(ctx, x, y, width, height, 18);
@@ -439,25 +494,18 @@ export class Renderer {
     ctx.lineWidth = 1;
     this.strokeRoundedRect(ctx, x, y, width, height, 18);
 
-    if (iconText) {
-      ctx.fillStyle = coreColor;
-      ctx.beginPath();
-      ctx.arc(x + 24, y + height / 2, 12, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = "#112338";
-      ctx.font = "bold 12px Trebuchet MS";
-      ctx.textAlign = "center";
-      ctx.fillText(iconText, x + 24, y + height / 2 + 4);
+    if (shape) {
+      this.drawWeaponShape(ctx, shape, x + 24, y + height / 2, 0, 0.9, coreColor, accentColor);
     }
 
     ctx.fillStyle = "rgba(255, 255, 255, 0.66)";
     ctx.font = "bold 11px Trebuchet MS";
     ctx.textAlign = "left";
-    ctx.fillText(label.toUpperCase(), x + (iconText ? 46 : 16), y + 20);
+    ctx.fillText(label.toUpperCase(), x + (shape ? 46 : 16), y + 20);
 
     ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 18px Trebuchet MS";
-    ctx.fillText(value, x + (iconText ? 46 : 16), y + 42);
+    ctx.font = "bold 17px Trebuchet MS";
+    ctx.fillText(value, x + (shape ? 46 : 16), y + 42);
 
     ctx.fillStyle = accentColor;
     ctx.fillRect(x + 12, y + height - 7, width - 24, 3);
@@ -467,9 +515,9 @@ export class Renderer {
   drawAimReadout(ctx, player, wind) {
     const text = `${Math.round(player.aim.angle)} deg  |  ${Math.round(player.aim.power)} power  |  ${signLabel(wind)} ${Math.round(Math.abs(wind))}`;
     ctx.save();
-    const width = 248;
+    const width = 258;
     const x = (this.canvas.width - width) / 2;
-    const y = this.canvas.height - 82;
+    const y = this.canvas.height - 148;
     ctx.fillStyle = "rgba(16, 31, 48, 0.74)";
     this.fillRoundedRect(ctx, x, y, width, 38, 19);
     ctx.fillStyle = "rgba(255, 255, 255, 0.92)";
@@ -481,9 +529,9 @@ export class Renderer {
 
   drawDragReadout(ctx, drag, shot) {
     ctx.save();
-    const width = 280;
+    const width = 286;
     const x = (this.canvas.width - width) / 2;
-    const y = this.canvas.height - 86;
+    const y = this.canvas.height - 152;
     ctx.fillStyle = drag.canFire ? "rgba(16, 31, 48, 0.82)" : "rgba(80, 56, 35, 0.88)";
     this.fillRoundedRect(ctx, x, y, width, 44, 20);
     ctx.fillStyle = shot.ringColor;
