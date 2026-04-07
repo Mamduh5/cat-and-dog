@@ -63,6 +63,7 @@ export class Game {
       onMenu: () => this.showMenu(),
       onDifficulty: (level) => this.setDifficulty(level)
     });
+    this.ui.bindTouchControls(this.input);
 
     this.setDifficulty("normal");
     this.showMenu();

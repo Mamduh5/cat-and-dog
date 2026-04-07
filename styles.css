@@ -109,6 +109,7 @@ h2 {
   flex-direction: column;
   justify-content: center;
   gap: 4px;
+  min-width: 0;
 }
 
 .spotlight-card {
@@ -171,6 +172,7 @@ canvas {
   display: block;
   width: 100%;
   height: auto;
+  aspect-ratio: 16 / 9;
   border-radius: 16px;
   box-shadow: inset 0 0 0 1px rgba(12, 25, 42, 0.08), 0 14px 30px var(--canvas-shadow);
   background: linear-gradient(180deg, #d9f0ff, #f7f1d8 70%, #87be68 70%);
@@ -182,6 +184,7 @@ canvas {
   left: 50%;
   transform: translateX(-50%);
   min-width: 220px;
+  max-width: calc(100% - 44px);
   padding: 12px 18px;
   border-radius: 18px;
   background: rgba(18, 35, 55, 0.78);
@@ -237,7 +240,9 @@ canvas {
 }
 
 .overlay-card {
-  width: min(520px, calc(100% - 32px));
+  width: min(520px, calc(100% - 24px));
+  max-height: calc(100% - 24px);
+  overflow: auto;
   padding: 30px;
   border-radius: 24px;
   background:
@@ -323,10 +328,76 @@ canvas {
   box-shadow: 0 10px 20px rgba(47, 117, 192, 0.28);
 }
 
+.touch-controls {
+  display: none;
+  margin-top: 12px;
+  padding: 14px;
+}
+
+.touch-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.touch-title {
+  margin: 0;
+}
+
+.touch-note {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.touch-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.touch-grid + .touch-grid {
+  margin-top: 10px;
+}
+
+.touch-grid-aim {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.touch-grid-actions {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.touch-button {
+  min-height: 54px;
+  border: 0;
+  border-radius: 18px;
+  padding: 12px 10px;
+  font: inherit;
+  font-weight: 800;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: inset 0 0 0 1px rgba(23, 48, 77, 0.08);
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.touch-button-primary {
+  color: white;
+  background: linear-gradient(135deg, #ec8351, #da5a27);
+}
+
+.touch-button-secondary {
+  color: white;
+  background: linear-gradient(135deg, #4d96df, #2f75c0);
+}
+
 .side-panel {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  min-width: 0;
 }
 
 .controls-panel,
@@ -335,8 +406,7 @@ canvas {
 }
 
 .compact-panel {
-  background:
-    linear-gradient(180deg, rgba(255, 252, 246, 0.98), rgba(243, 239, 230, 0.96));
+  background: linear-gradient(180deg, rgba(255, 252, 246, 0.98), rgba(243, 239, 230, 0.96));
 }
 
 .panel-title {
@@ -390,24 +460,60 @@ canvas {
 
 @media (max-width: 760px) {
   body {
-    padding: 12px;
+    padding: 10px;
   }
 
   .title-row {
     flex-direction: column;
     align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 12px;
   }
 
   .hud {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 12px;
   }
 
-  .side-panel {
-    grid-template-columns: 1fr;
+  .stat-card,
+  .info-card {
+    padding: 12px;
+  }
+
+  .stat-value {
+    font-size: 1.02rem;
+  }
+
+  .info-note,
+  .stat-label {
+    font-size: 0.74rem;
+  }
+
+  .game-frame {
+    gap: 12px;
+  }
+
+  .canvas-wrap {
+    padding: 8px;
+  }
+
+  .overlay {
+    inset: 8px;
   }
 
   .overlay-card {
-    padding: 22px;
+    padding: 18px;
+    border-radius: 18px;
+  }
+
+  .button-row {
+    gap: 10px;
+  }
+
+  .action-button,
+  .segment-button {
+    min-height: 48px;
   }
 
   .controls-list li {
@@ -415,13 +521,77 @@ canvas {
   }
 
   .canvas-hint {
-    left: 16px;
-    right: 16px;
-    bottom: 16px;
-    font-size: 0.84rem;
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    padding: 8px 10px;
+    font-size: 0.78rem;
+  }
+
+  .turn-banner {
+    top: 12px;
+    max-width: calc(100% - 24px);
+    padding: 10px 12px;
+  }
+
+  .side-panel {
+    grid-template-columns: 1fr;
+    gap: 12px;
   }
 
   .segmented {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (hover: none), (pointer: coarse), (max-width: 900px) {
+  body {
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  }
+
+  .touch-controls {
+    display: block;
+  }
+
+  .side-panel {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .hud {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .touch-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .touch-grid-aim,
+  .touch-grid-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .mode-pill {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+@media (max-width: 420px) {
+  h1 {
+    font-size: 1.85rem;
+  }
+
+  .overlay-card {
+    width: calc(100% - 12px);
+    padding: 16px;
+  }
+
+  .touch-button {
+    min-height: 50px;
+    font-size: 0.94rem;
   }
 }

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Backyard Ballistics</title>
   <link rel="stylesheet" href="./styles.css">
 </head>
@@ -104,6 +104,27 @@
             </div>
           </div>
         </div>
+
+        <section class="panel touch-controls" aria-label="Touch Controls">
+          <div class="touch-header">
+            <p class="panel-title touch-title">Touch Controls</p>
+            <span class="touch-note">Keyboard still works on desktop.</span>
+          </div>
+
+          <div class="touch-grid touch-grid-aim">
+            <button class="touch-button" data-input-code="ArrowLeft" data-input-mode="hold">Angle -</button>
+            <button class="touch-button" data-input-code="ArrowRight" data-input-mode="hold">Angle +</button>
+            <button class="touch-button" data-input-code="ArrowDown" data-input-mode="hold">Power -</button>
+            <button class="touch-button" data-input-code="ArrowUp" data-input-mode="hold">Power +</button>
+          </div>
+
+          <div class="touch-grid touch-grid-actions">
+            <button class="touch-button touch-button-secondary" data-input-code="KeyQ" data-input-mode="tap">Shot Prev</button>
+            <button class="touch-button touch-button-primary" data-input-code="Space" data-input-mode="tap">Throw</button>
+            <button class="touch-button touch-button-secondary" data-input-code="KeyE" data-input-mode="tap">Shot Next</button>
+            <button class="touch-button" data-input-code="KeyR" data-input-mode="tap">Restart</button>
+          </div>
+        </section>
       </div>
 
       <aside class="side-panel">
@@ -138,4 +159,3 @@
   <script type="module" src="./src/main.js"></script>
 </body>
 </html>
-

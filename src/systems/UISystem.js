@@ -9,6 +9,7 @@ export class UISystem {
       this.refs[key] = document.getElementById(id);
     }
     this.difficultyButtons = Array.from(document.querySelectorAll(DIFFICULTY_SELECTOR));
+    this.touchButtons = Array.from(document.querySelectorAll("[data-input-code]"));
   }
 
   bindMenuControls(handlers) {
@@ -19,6 +20,10 @@ export class UISystem {
     this.difficultyButtons.forEach((button) => {
       button.addEventListener("click", () => handlers.onDifficulty(button.dataset.difficulty));
     });
+  }
+
+  bindTouchControls(input) {
+    input.bindTouchControls(this.touchButtons);
   }
 
   setDifficulty(level, description) {
