@@ -10,7 +10,7 @@ const WEAPON_META = {
 
 function renderWeaponBar() {
   return `
-    <div class="weapon-bar" aria-label="Battle weapon bar">
+    <div class="weapon-bar" id="weaponBar" aria-label="Battle weapon bar">
       ${WEAPON_BAR_ORDER.map((key) => {
         const meta = WEAPON_META[key];
         return `
@@ -37,7 +37,7 @@ function renderTouchControls(preset) {
     <section class="panel touch-controls" aria-label="Touch Controls">
       <div class="touch-header">
         <p class="panel-title touch-title">Touch Play</p>
-        <span class="touch-note">Aim with drag. The weapon bar stays inside the arena.</span>
+        <span class="touch-note">Weapon bar appears only when you can act.</span>
       </div>
 
       <div class="touch-grid touch-grid-actions">
@@ -49,14 +49,17 @@ function renderTouchControls(preset) {
 
 export function renderShell(preset) {
   return `
-    <main class="play-shell ${preset.shellClass}">
+    <main class="play-shell ${preset.shellClass}" id="playRoot">
       <header class="play-topbar">
         <a class="back-link" href="../../">Back</a>
         <div class="play-heading">
           <p class="eyebrow">Shared Core / ${preset.label} Shell</p>
           <h1>Backyard Ballistics</h1>
         </div>
-        <div class="mode-pill" id="modeLabel">Mode: Menu</div>
+        <div class="topbar-actions">
+          <button class="shell-button" id="fullscreenButton" type="button">Fullscreen</button>
+          <div class="mode-pill" id="modeLabel">Mode: Menu</div>
+        </div>
       </header>
 
       <section class="hud" aria-label="Game HUD">
@@ -161,11 +164,11 @@ export function renderShell(preset) {
 
           <div class="panel notes-panel">
             <p class="panel-title">Arsenal</p>
-            <p><strong>Normal:</strong> unlimited balanced ball and your default benchmark.</p>
-            <p><strong>Light:</strong> 5 sticks with easier reach and lighter damage.</p>
-            <p><strong>Heavy:</strong> 3 rocks with stronger impact and more drop.</p>
-            <p><strong>Super:</strong> 1 rocket with half-HP direct damage.</p>
-            <p><strong>Heal:</strong> 1 instant recovery action worth 35% max HP.</p>
+            <p><strong>Normal:</strong> reliable baseline.</p>
+            <p><strong>Light:</strong> faster, wind-sensitive, weaker.</p>
+            <p><strong>Heavy:</strong> slower, heavier, stronger.</p>
+            <p><strong>Super:</strong> special, demanding, powerful.</p>
+            <p><strong>Heal:</strong> one instant recovery action.</p>
           </div>
 
           <div class="panel notes-panel compact-panel">

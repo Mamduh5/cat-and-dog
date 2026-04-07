@@ -64,15 +64,40 @@ export class Game {
       onMenu: () => this.showMenu(),
       onDifficulty: (level) => this.setDifficulty(level)
     });
+    this.ui.bindShellControls({
+      onFullscreen: () => this.toggleFullscreen()
+    });
     this.ui.bindBattleControls({
       onWeaponSelect: (key) => this.turnSystem.handleWeaponSelection(this, key)
     });
     this.ui.bindTouchControls(this.input);
+    this.ui.setFullscreenAvailability(Boolean(document.fullscreenEnabled));
+    this.ui.updateFullscreenState(Boolean(document.fullscreenElement));
+    document.addEventListener("fullscreenchange", () => {
+      this.ui.updateFullscreenState(Boolean(document.fullscreenElement));
+    });
     this.input.bindAimSurface(canvas, this.preset.touch);
 
     this.setDifficulty("normal");
     this.showMenu();
     requestAnimationFrame((timestamp) => this.loop(timestamp));
+  }
+
+  async toggleFullscreen() {
+    const root = document.getElementById(DOM_IDS.playRoot);
+    if (!document.fullscreenEnabled || !root) {
+      return;
+    }
+
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      } else {
+        await root.requestFullscreen();
+      }
+    } catch {
+      this.ui.setFullscreenAvailability(false);
+    }
   }
 
   clearTransientEffects() {

@@ -1,5 +1,7 @@
 export const DOM_IDS = {
+  playRoot: "playRoot",
   canvas: "gameCanvas",
+  weaponBar: "weaponBar",
   modeLabel: "modeLabel",
   turnValue: "turnValue",
   turnSubtext: "turnSubtext",
@@ -27,7 +29,8 @@ export const DOM_IDS = {
   playCpuButton: "playCpuButton",
   playLocalButton: "playLocalButton",
   restartButton: "restartButton",
-  menuButton: "menuButton"
+  menuButton: "menuButton",
+  fullscreenButton: "fullscreenButton"
 };
 
 export const DIFFICULTY_SELECTOR = "[data-difficulty]";

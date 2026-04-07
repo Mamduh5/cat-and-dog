@@ -1,6 +1,6 @@
 import { CONFIG } from "../config.js";
 import { DOM_IDS, DIFFICULTY_SELECTOR } from "../core/AssetRefs.js";
-import { ATTACK_ORDER, formatAmmoCount, setText, signLabel, WEAPON_BAR_ORDER } from "../utils/helpers.js";
+import { formatAmmoCount, setText, signLabel } from "../utils/helpers.js";
 
 export class UISystem {
   constructor() {
@@ -23,6 +23,12 @@ export class UISystem {
     });
   }
 
+  bindShellControls(handlers) {
+    if (this.refs.fullscreenButton) {
+      this.refs.fullscreenButton.addEventListener("click", handlers.onFullscreen);
+    }
+  }
+
   bindBattleControls(handlers) {
     this.weaponButtons.forEach((button) => {
       button.addEventListener("click", () => handlers.onWeaponSelect(button.dataset.weaponKey));
@@ -31,6 +37,18 @@ export class UISystem {
 
   bindTouchControls(input) {
     input.bindTouchControls(this.touchButtons);
+  }
+
+  setFullscreenAvailability(enabled) {
+    if (this.refs.fullscreenButton) {
+      this.refs.fullscreenButton.hidden = !enabled;
+    }
+  }
+
+  updateFullscreenState(active) {
+    if (this.refs.fullscreenButton) {
+      setText(this.refs.fullscreenButton, active ? "Exit Full" : "Fullscreen");
+    }
   }
 
   setDifficulty(level, description) {
@@ -68,6 +86,9 @@ export class UISystem {
   }
 
   updateWeaponBar(game, current) {
+    const showWeaponBar = Boolean(game.state.mode) && game.state.scene === "battle" && game.state.phase === "aiming" && !game.isCpuTurn();
+    this.refs.weaponBar?.classList.toggle("is-hidden", !showWeaponBar);
+
     this.weaponButtons.forEach((button) => {
       const key = button.dataset.weaponKey;
       const isHeal = key === "heal";
@@ -75,7 +96,7 @@ export class UISystem {
       const noteNode = button.querySelector("[data-weapon-note]");
       const count = current.getAmmo(key);
       const config = isHeal ? CONFIG.items.heal : CONFIG.projectileTypes[key];
-      button.classList.toggle("is-active", !isHeal && current.weapon.shotType === key && game.state.phase === "aiming");
+      button.classList.toggle("is-active", !isHeal && current.weapon.shotType === key && showWeaponBar);
       button.classList.toggle("is-disabled", !current.hasAmmo(key));
       button.disabled = !current.hasAmmo(key);
       if (countNode) {
@@ -92,6 +113,7 @@ export class UISystem {
     const current = players[state.currentPlayerIndex] || players[0];
     const shot = CONFIG.projectileTypes[current.weapon.shotType];
     const shotAmmo = current.getAmmo(current.weapon.shotType);
+    const showHint = Boolean(state.mode) && state.scene === "battle" && ["ready", "aiming"].includes(state.phase) && !state.banner.visible && !state.pendingGameOver;
 
     this.setModeLabel(state.mode, state.cpuDifficulty);
     setText(this.refs.p1Label, players[0].name);
@@ -106,6 +128,7 @@ export class UISystem {
     setText(this.refs.shotNote, `${shot.note} / ${formatAmmoCount(shotAmmo)} left`);
     setText(this.refs.windValue, `${signLabel(state.wind)} ${Math.round(Math.abs(state.wind))}`);
     setText(this.refs.canvasHint, state.hint);
+    this.refs.canvasHint?.classList.toggle("is-hidden", !showHint);
     this.updateWeaponBar(game, current);
 
     if (!state.mode) {
@@ -128,7 +151,7 @@ export class UISystem {
       setText(this.refs.turnSubtext, `${CONFIG.cpuProfiles[state.cpuDifficulty].label} CPU is lining up a play.`);
     } else if (game.preset.touch) {
       setText(this.refs.turnValue, current.name);
-      setText(this.refs.turnSubtext, "Drag to aim, tap the weapon bar to switch or heal.");
+      setText(this.refs.turnSubtext, "Drag to aim. Weapon bar appears when you can act.");
     } else {
       setText(this.refs.turnValue, current.name);
       setText(this.refs.turnSubtext, "Adjust, switch weapons, and fire.");
