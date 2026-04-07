@@ -2,6 +2,9 @@ export class InputManager {
   constructor() {
     this.keys = new Set();
     this.actions = [];
+    this.pointerEvents = [];
+    this.canvasAimEnabled = false;
+    this.aimSurface = null;
     this.prevented = new Set([
       "ArrowLeft",
       "ArrowRight",
@@ -42,6 +45,7 @@ export class InputManager {
     window.addEventListener("blur", () => {
       this.keys.clear();
       this.pointerHolds.clear();
+      this.pointerEvents.push({ type: "cancel-all" });
     });
   }
 
@@ -86,6 +90,70 @@ export class InputManager {
     });
   }
 
+  bindAimSurface(surface, enabled) {
+    this.aimSurface = surface;
+    this.canvasAimEnabled = Boolean(enabled);
+
+    if (!surface || surface.dataset.pointerBound === "true") {
+      return;
+    }
+
+    const toCanvasPoint = (event) => {
+      const rect = surface.getBoundingClientRect();
+      return {
+        x: ((event.clientX - rect.left) / rect.width) * surface.width,
+        y: ((event.clientY - rect.top) / rect.height) * surface.height
+      };
+    };
+
+    const pushPointer = (type, event) => {
+      if (!this.canvasAimEnabled) {
+        return;
+      }
+
+      const point = toCanvasPoint(event);
+      this.pointerEvents.push({
+        type,
+        pointerId: event.pointerId,
+        x: point.x,
+        y: point.y,
+        pointerType: event.pointerType
+      });
+    };
+
+    surface.addEventListener("pointerdown", (event) => {
+      if (!this.canvasAimEnabled) {
+        return;
+      }
+      event.preventDefault();
+      surface.setPointerCapture?.(event.pointerId);
+      pushPointer("down", event);
+    });
+
+    surface.addEventListener("pointermove", (event) => {
+      if (!this.canvasAimEnabled) {
+        return;
+      }
+      pushPointer("move", event);
+    });
+
+    surface.addEventListener("pointerup", (event) => {
+      if (!this.canvasAimEnabled) {
+        return;
+      }
+      event.preventDefault();
+      surface.releasePointerCapture?.(event.pointerId);
+      pushPointer("up", event);
+    });
+
+    surface.addEventListener("pointercancel", (event) => {
+      surface.releasePointerCapture?.(event.pointerId);
+      pushPointer("cancel", event);
+    });
+
+    surface.dataset.pointerBound = "true";
+  }
+
   queueAction(code) {
     this.actions.push(code);
   }
@@ -97,6 +165,12 @@ export class InputManager {
   consumeActions() {
     const current = [...this.actions];
     this.actions.length = 0;
+    return current;
+  }
+
+  consumePointerEvents() {
+    const current = [...this.pointerEvents];
+    this.pointerEvents.length = 0;
     return current;
   }
 }

@@ -1,4 +1,5 @@
 import { CONFIG } from "../config.js";
+import { signLabel } from "../utils/helpers.js";
 import { easeOutCubic, lerp } from "../utils/math.js";
 
 export class Renderer {
@@ -25,11 +26,13 @@ export class Renderer {
       const active = index === game.state.currentPlayerIndex && ["ready", "aiming", "windup"].includes(game.state.phase);
       this.drawPlayer(ctx, player, game, active);
     });
+    if (game.state.dragAim) this.drawDragAim(ctx, game);
     game.particles.forEach((particle) => this.drawParticle(ctx, particle));
     game.shockwaves.forEach((wave) => this.drawShockwave(ctx, wave));
     if (game.projectile) this.drawProjectile(ctx, game.projectile);
     game.floatingTexts.forEach((text) => this.drawFloatingText(ctx, text));
     ctx.restore();
+    this.drawCanvasHud(ctx, game);
   }
 
   drawBackground(ctx, game) {
@@ -120,10 +123,7 @@ export class Renderer {
     ctx.save();
     ctx.translate(this.canvas.width / 2, 58);
     ctx.fillStyle = "rgba(255, 255, 255, 0.88)";
-    ctx.beginPath();
-    if (typeof ctx.roundRect === "function") ctx.roundRect(-108, -24, 216, 52, 18);
-    else ctx.rect(-108, -24, 216, 52);
-    ctx.fill();
+    this.fillRoundedRect(ctx, -108, -24, 216, 52, 18);
     ctx.fillStyle = "#17304d";
     ctx.font = "bold 16px Trebuchet MS";
     ctx.textAlign = "center";
@@ -184,19 +184,68 @@ export class Renderer {
     let y = start.y;
     let vx = Math.cos(angle) * player.aim.power * shot.speedScale * player.facing;
     let vy = -Math.sin(angle) * player.aim.power * shot.speedScale;
+    const dragging = Boolean(game.state.dragAim);
     ctx.save();
-    for (let step = 0; step < 22; step += 1) {
+    for (let step = 0; step < (dragging ? 25 : 22); step += 1) {
       vx += game.state.wind * shot.windScale * 0.055;
       vy += CONFIG.world.gravity * shot.gravityScale * 0.055;
       x += vx * 0.055;
       y += vy * 0.055;
-      ctx.globalAlpha = Math.max(0.12, 0.7 - step * 0.03);
-      ctx.fillStyle = step < 5 ? shot.ringColor : "rgba(255,255,255,0.34)";
+      ctx.globalAlpha = Math.max(0.14, (dragging ? 0.88 : 0.7) - step * (dragging ? 0.026 : 0.03));
+      ctx.fillStyle = step < (dragging ? 6 : 5) ? shot.ringColor : "rgba(255,255,255,0.34)";
       ctx.beginPath();
-      ctx.arc(x, y, 4.4 - step * 0.14, 0, Math.PI * 2);
+      ctx.arc(x, y, (dragging ? 4.8 : 4.4) - step * 0.14, 0, Math.PI * 2);
       ctx.fill();
       if (y >= CONFIG.world.groundY) break;
     }
+    ctx.restore();
+  }
+
+  drawDragAim(ctx, game) {
+    const drag = game.state.dragAim;
+    if (!drag) {
+      return;
+    }
+
+    const shot = CONFIG.projectileTypes[game.getCurrentPlayer().weapon.shotType];
+    const accent = drag.canFire ? shot.ringColor : "rgba(255, 214, 170, 0.96)";
+
+    ctx.save();
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.18)";
+    ctx.lineWidth = 14;
+    ctx.beginPath();
+    ctx.moveTo(drag.anchorX, drag.anchorY);
+    ctx.lineTo(drag.currentX, drag.currentY);
+    ctx.stroke();
+
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.moveTo(drag.anchorX, drag.anchorY);
+    ctx.lineTo(drag.currentX, drag.currentY);
+    ctx.stroke();
+
+    ctx.fillStyle = "rgba(20, 37, 57, 0.42)";
+    ctx.beginPath();
+    ctx.arc(drag.anchorX, drag.anchorY, 14, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = shot.coreColor;
+    ctx.beginPath();
+    ctx.arc(drag.anchorX, drag.anchorY, 7, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = drag.canFire ? "rgba(19, 41, 63, 0.92)" : "rgba(86, 54, 35, 0.9)";
+    ctx.beginPath();
+    ctx.arc(drag.currentX, drag.currentY, 19, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(drag.currentX, drag.currentY, 19, 0, Math.PI * 2);
+    ctx.stroke();
     ctx.restore();
   }
 
@@ -344,7 +393,7 @@ export class Renderer {
 
   drawShockwave(ctx, wave) {
     const t = 1 - wave.life / wave.maxLife;
-    ctx.strokeStyle = `${wave.color} ${1 - t})`;
+    ctx.strokeStyle = `${wave.color}${1 - t})`;
     ctx.lineWidth = lerp(6, 1, t);
     ctx.beginPath();
     ctx.arc(wave.x, wave.y, lerp(wave.fromRadius, wave.toRadius, easeOutCubic(t)), 0, Math.PI * 2);
@@ -360,5 +409,104 @@ export class Renderer {
     ctx.textAlign = "center";
     ctx.fillText(text.text, text.x, text.y);
     ctx.restore();
+  }
+
+  drawCanvasHud(ctx, game) {
+    if (!game.preset.touch || !game.state.mode || game.state.scene === "menu") {
+      return;
+    }
+
+    const player = game.getCurrentPlayer();
+    const shot = CONFIG.projectileTypes[player.weapon.shotType];
+    const turnLabel = game.state.phase === "gameover" ? "Match Over" : player.name;
+
+    this.drawInfoCard(ctx, 18, 18, 182, 58, "Projectile", shot.label, shot.coreColor, shot.ringColor, shot.label.charAt(0));
+    this.drawInfoCard(ctx, this.canvas.width - 200, 18, 182, 58, "Turn", turnLabel, "#2f75c0", "rgba(122, 182, 255, 0.95)", null);
+
+    if (game.state.dragAim) {
+      const drag = game.state.dragAim;
+      this.drawDragReadout(ctx, drag, shot);
+    } else {
+      this.drawAimReadout(ctx, player, game.state.wind);
+    }
+  }
+
+  drawInfoCard(ctx, x, y, width, height, label, value, coreColor, accentColor, iconText) {
+    ctx.save();
+    ctx.fillStyle = "rgba(16, 31, 48, 0.76)";
+    this.fillRoundedRect(ctx, x, y, width, height, 18);
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.12)";
+    ctx.lineWidth = 1;
+    this.strokeRoundedRect(ctx, x, y, width, height, 18);
+
+    if (iconText) {
+      ctx.fillStyle = coreColor;
+      ctx.beginPath();
+      ctx.arc(x + 24, y + height / 2, 12, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#112338";
+      ctx.font = "bold 12px Trebuchet MS";
+      ctx.textAlign = "center";
+      ctx.fillText(iconText, x + 24, y + height / 2 + 4);
+    }
+
+    ctx.fillStyle = "rgba(255, 255, 255, 0.66)";
+    ctx.font = "bold 11px Trebuchet MS";
+    ctx.textAlign = "left";
+    ctx.fillText(label.toUpperCase(), x + (iconText ? 46 : 16), y + 20);
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 18px Trebuchet MS";
+    ctx.fillText(value, x + (iconText ? 46 : 16), y + 42);
+
+    ctx.fillStyle = accentColor;
+    ctx.fillRect(x + 12, y + height - 7, width - 24, 3);
+    ctx.restore();
+  }
+
+  drawAimReadout(ctx, player, wind) {
+    const text = `${Math.round(player.aim.angle)} deg  |  ${Math.round(player.aim.power)} power  |  ${signLabel(wind)} ${Math.round(Math.abs(wind))}`;
+    ctx.save();
+    const width = 248;
+    const x = (this.canvas.width - width) / 2;
+    const y = this.canvas.height - 82;
+    ctx.fillStyle = "rgba(16, 31, 48, 0.74)";
+    this.fillRoundedRect(ctx, x, y, width, 38, 19);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.92)";
+    ctx.font = "bold 15px Trebuchet MS";
+    ctx.textAlign = "center";
+    ctx.fillText(text, x + width / 2, y + 24);
+    ctx.restore();
+  }
+
+  drawDragReadout(ctx, drag, shot) {
+    ctx.save();
+    const width = 280;
+    const x = (this.canvas.width - width) / 2;
+    const y = this.canvas.height - 86;
+    ctx.fillStyle = drag.canFire ? "rgba(16, 31, 48, 0.82)" : "rgba(80, 56, 35, 0.88)";
+    this.fillRoundedRect(ctx, x, y, width, 44, 20);
+    ctx.fillStyle = shot.ringColor;
+    ctx.fillRect(x + 14, y + 34, (width - 28) * drag.normalized, 4);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 15px Trebuchet MS";
+    ctx.textAlign = "center";
+    const verb = drag.canFire ? "Release to fire" : "Pull farther";
+    ctx.fillText(`${verb}  |  ${Math.round(drag.angle)} deg  |  ${Math.round(drag.power)} power`, x + width / 2, y + 24);
+    ctx.restore();
+  }
+
+  fillRoundedRect(ctx, x, y, width, height, radius) {
+    ctx.beginPath();
+    if (typeof ctx.roundRect === "function") ctx.roundRect(x, y, width, height, radius);
+    else ctx.rect(x, y, width, height);
+    ctx.fill();
+  }
+
+  strokeRoundedRect(ctx, x, y, width, height, radius) {
+    ctx.beginPath();
+    if (typeof ctx.roundRect === "function") ctx.roundRect(x, y, width, height, radius);
+    else ctx.rect(x, y, width, height);
+    ctx.stroke();
   }
 }

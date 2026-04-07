@@ -7,4 +7,4 @@ document.title = `Backyard Ballistics - ${preset.label}`;
 document.body.classList.add(preset.shellClass);
 
 document.getElementById("app").innerHTML = renderShell(preset);
-new Game();
+new Game(preset);

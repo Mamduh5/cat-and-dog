@@ -94,9 +94,15 @@ export class UISystem {
     } else if (state.phase === "turn-end") {
       setText(this.refs.turnValue, "Resolving");
       setText(this.refs.turnSubtext, "Preparing the next turn.");
+    } else if (game.isCpuTurn()) {
+      setText(this.refs.turnValue, current.name);
+      setText(this.refs.turnSubtext, `${CONFIG.cpuProfiles[state.cpuDifficulty].label} CPU is lining up a shot.`);
+    } else if (game.preset.touch) {
+      setText(this.refs.turnValue, current.name);
+      setText(this.refs.turnSubtext, "Drag from the hand to aim, release to fire.");
     } else {
       setText(this.refs.turnValue, current.name);
-      setText(this.refs.turnSubtext, game.isCpuTurn() ? `${CONFIG.cpuProfiles[state.cpuDifficulty].label} CPU is lining up a shot.` : "Adjust, choose projectile, and fire.");
+      setText(this.refs.turnSubtext, "Adjust, choose projectile, and fire.");
     }
 
     this.refs.turnBanner.classList.toggle("hidden", !state.banner.visible);

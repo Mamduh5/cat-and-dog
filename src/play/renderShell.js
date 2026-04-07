@@ -6,20 +6,12 @@ function renderTouchControls(preset) {
   return `
     <section class="panel touch-controls" aria-label="Touch Controls">
       <div class="touch-header">
-        <p class="panel-title touch-title">Touch Controls</p>
-        <span class="touch-note">${preset.controlsHint}</span>
-      </div>
-
-      <div class="touch-grid touch-grid-aim">
-        <button class="touch-button" data-input-code="ArrowLeft" data-input-mode="hold">Angle -</button>
-        <button class="touch-button" data-input-code="ArrowRight" data-input-mode="hold">Angle +</button>
-        <button class="touch-button" data-input-code="ArrowDown" data-input-mode="hold">Power -</button>
-        <button class="touch-button" data-input-code="ArrowUp" data-input-mode="hold">Power +</button>
+        <p class="panel-title touch-title">Touch Play</p>
+        <span class="touch-note">Drag from the throwing hand to aim. Release to fire.</span>
       </div>
 
       <div class="touch-grid touch-grid-actions">
         <button class="touch-button touch-button-secondary" data-input-code="KeyQ" data-input-mode="tap">Shot Prev</button>
-        <button class="touch-button touch-button-primary" data-input-code="Space" data-input-mode="tap">Throw</button>
         <button class="touch-button touch-button-secondary" data-input-code="KeyE" data-input-mode="tap">Shot Next</button>
         <button class="touch-button" data-input-code="KeyR" data-input-mode="tap">Restart</button>
       </div>
@@ -89,7 +81,7 @@ export function renderShell(preset) {
             <strong class="turn-banner-title" id="turnBannerTitle">P1 Cat</strong>
           </div>
 
-          <div class="canvas-hint" id="canvasHint">Adjust angle and power, then throw.</div>
+          <div class="canvas-hint" id="canvasHint">Drag from the throwing hand, then release to fire.</div>
 
           <div class="overlay menu-overlay" id="menuOverlay">
             <div class="overlay-card">
@@ -130,10 +122,10 @@ export function renderShell(preset) {
           <div class="panel controls-panel">
             <p class="panel-title">Controls</p>
             <ul class="controls-list">
-              <li><span>Angle</span><strong>Left / Right or A / D</strong></li>
-              <li><span>Power</span><strong>Up / Down or W / S</strong></li>
+              <li><span>Aim</span><strong>${preset.touch ? "Drag back from hand, release to fire" : "Left / Right or A / D"}</strong></li>
+              <li><span>Power</span><strong>${preset.touch ? "Pull farther for more power" : "Up / Down or W / S"}</strong></li>
               <li><span>Projectile</span><strong>Q / E or 1 / 2 / 3</strong></li>
-              <li><span>Throw</span><strong>Space or Enter</strong></li>
+              <li><span>Throw</span><strong>${preset.touch ? "Release drag" : "Space or Enter"}</strong></li>
               <li><span>Restart / Menu</span><strong>R / M</strong></li>
             </ul>
           </div>

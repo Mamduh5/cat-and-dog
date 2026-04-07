@@ -20,6 +20,13 @@ export const CONFIG = {
     powerTap: 14,
     defaultPower: 398
   },
+  touch: {
+    pickupRadius: 78,
+    dragMin: 22,
+    dragMax: 190,
+    fireThreshold: 34,
+    angleBase: 18
+  },
   turn: {
     readyPause: 0.82,
     impactPause: 0.92,

@@ -13,6 +13,7 @@ export class GameState {
     this.screenShake = 0;
     this.hint = "Choose a mode to start a new match.";
     this.banner = { visible: false, label: "Get Ready", title: "P1 Cat" };
+    this.dragAim = null;
     this.cloudOffsetNear = 0;
     this.cloudOffsetFar = 0;
     this.elapsedTime = 0;
@@ -34,5 +35,19 @@ export class GameState {
 
   hideBanner() {
     this.banner.visible = false;
+  }
+
+  startDragAim(data) {
+    this.dragAim = { active: true, ...data };
+  }
+
+  updateDragAim(data) {
+    if (this.dragAim) {
+      Object.assign(this.dragAim, data);
+    }
+  }
+
+  clearDragAim() {
+    this.dragAim = null;
   }
 }

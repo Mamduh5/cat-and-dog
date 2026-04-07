@@ -15,8 +15,9 @@ import { DamageSystem } from "../systems/DamageSystem.js";
 import { TurnSystem } from "../systems/TurnSystem.js";
 
 export class Game {
-  constructor() {
+  constructor(preset = { touch: false, label: "Desktop", shellClass: "device-desktop" }) {
     const canvas = document.getElementById(DOM_IDS.canvas);
+    this.preset = preset;
     this.state = new GameState();
     this.input = new InputManager();
     this.input.attach();
@@ -64,6 +65,7 @@ export class Game {
       onDifficulty: (level) => this.setDifficulty(level)
     });
     this.ui.bindTouchControls(this.input);
+    this.input.bindAimSurface(canvas, this.preset.touch);
 
     this.setDifficulty("normal");
     this.showMenu();
@@ -127,7 +129,11 @@ export class Game {
     return false;
   }
 
-  processActions() {
+  processInputs() {
+    for (const event of this.input.consumePointerEvents()) {
+      this.turnSystem.handlePointer(this, event);
+    }
+
     for (const code of this.input.consumeActions()) {
       if (!this.handleGlobalAction(code)) {
         this.turnSystem.handleAction(this, code);
@@ -139,7 +145,7 @@ export class Game {
     const dt = Math.min(0.033, (timestamp - this.lastFrame) / 1000 || 0.016);
     this.lastFrame = timestamp;
     this.state.elapsedTime += dt;
-    this.processActions();
+    this.processInputs();
     this.physicsSystem.updateEffects(this, dt);
     if (this.state.scene === "battle" || this.state.scene === "end") {
       this.turnSystem.update(this, dt);
