@@ -1,0 +1,25 @@
+{
+  "name": "Backyard Ballistics",
+  "short_name": "Ballistics",
+  "description": "Original turn-based backyard projectile battles with desktop, tablet, and mobile shells sharing one game core.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#d8edf9",
+  "theme_color": "#17304d",
+  "orientation": "landscape",
+  "icons": [
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

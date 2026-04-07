@@ -29,7 +29,7 @@ function renderWeaponBar() {
 }
 
 function renderTouchControls(preset) {
-  if (!preset.touch) {
+  if (!preset.touch || preset.id === "mobile") {
     return "";
   }
 
@@ -37,13 +37,49 @@ function renderTouchControls(preset) {
     <section class="panel touch-controls" aria-label="Touch Controls">
       <div class="touch-header">
         <p class="panel-title touch-title">Touch Play</p>
-        <span class="touch-note">Weapon bar appears only when you can act.</span>
+        <span class="touch-note">Low-value instructions stay hidden outside the arena on phone.</span>
       </div>
 
       <div class="touch-grid touch-grid-actions">
         <button class="touch-button" data-input-code="KeyR" data-input-mode="tap">Restart</button>
       </div>
     </section>
+  `;
+}
+
+function renderSidePanel(preset) {
+  if (preset.id === "mobile") {
+    return "";
+  }
+
+  return `
+    <aside class="side-panel">
+      ${renderTouchControls(preset)}
+      <div class="panel controls-panel">
+        <p class="panel-title">Controls</p>
+        <ul class="controls-list">
+          <li><span>Aim</span><strong>${preset.touch ? "Drag back from hand, release to fire" : "Left / Right or A / D"}</strong></li>
+          <li><span>Power</span><strong>${preset.touch ? "Pull farther for more power" : "Up / Down or W / S"}</strong></li>
+          <li><span>Weapons</span><strong>1-4 attacks, 5 heal, or tap the arena bar</strong></li>
+          <li><span>Throw</span><strong>${preset.touch ? "Release drag" : "Space or Enter"}</strong></li>
+          <li><span>Restart / Menu</span><strong>R / M</strong></li>
+        </ul>
+      </div>
+
+      <div class="panel notes-panel">
+        <p class="panel-title">Arsenal</p>
+        <p><strong>Normal:</strong> reliable baseline.</p>
+        <p><strong>Light:</strong> faster, wind-sensitive, weaker.</p>
+        <p><strong>Heavy:</strong> slower, heavier, stronger.</p>
+        <p><strong>Super:</strong> special, demanding, powerful.</p>
+        <p><strong>Heal:</strong> one instant recovery action.</p>
+      </div>
+
+      <div class="panel notes-panel compact-panel">
+        <p class="panel-title">Match Notes</p>
+        <p id="matchNote">Wind changes each turn. Device shell: ${preset.label}. Shared game logic stays the same.</p>
+      </div>
+    </aside>
   `;
 }
 
@@ -57,7 +93,6 @@ export function renderShell(preset) {
           <h1>Backyard Ballistics</h1>
         </div>
         <div class="topbar-actions">
-          <button class="shell-button" id="fullscreenButton" type="button">Fullscreen</button>
           <div class="mode-pill" id="modeLabel">Mode: Menu</div>
         </div>
       </header>
@@ -106,6 +141,7 @@ export function renderShell(preset) {
       <section class="play-frame">
         <div class="panel canvas-wrap">
           <canvas id="gameCanvas" width="960" height="540" aria-label="Backyard Ballistics game canvas"></canvas>
+          <button class="canvas-shell-button" id="fullscreenButton" type="button">Fullscreen</button>
           ${renderWeaponBar()}
 
           <div class="turn-banner hidden" id="turnBanner" aria-live="polite">
@@ -149,33 +185,7 @@ export function renderShell(preset) {
           </div>
         </div>
 
-        <aside class="side-panel">
-          ${renderTouchControls(preset)}
-          <div class="panel controls-panel">
-            <p class="panel-title">Controls</p>
-            <ul class="controls-list">
-              <li><span>Aim</span><strong>${preset.touch ? "Drag back from hand, release to fire" : "Left / Right or A / D"}</strong></li>
-              <li><span>Power</span><strong>${preset.touch ? "Pull farther for more power" : "Up / Down or W / S"}</strong></li>
-              <li><span>Weapons</span><strong>1-4 attacks, 5 heal, or tap the arena bar</strong></li>
-              <li><span>Throw</span><strong>${preset.touch ? "Release drag" : "Space or Enter"}</strong></li>
-              <li><span>Restart / Menu</span><strong>R / M</strong></li>
-            </ul>
-          </div>
-
-          <div class="panel notes-panel">
-            <p class="panel-title">Arsenal</p>
-            <p><strong>Normal:</strong> reliable baseline.</p>
-            <p><strong>Light:</strong> faster, wind-sensitive, weaker.</p>
-            <p><strong>Heavy:</strong> slower, heavier, stronger.</p>
-            <p><strong>Super:</strong> special, demanding, powerful.</p>
-            <p><strong>Heal:</strong> one instant recovery action.</p>
-          </div>
-
-          <div class="panel notes-panel compact-panel">
-            <p class="panel-title">Match Notes</p>
-            <p id="matchNote">Wind changes each turn. Device shell: ${preset.label}. Shared game logic stays the same.</p>
-          </div>
-        </aside>
+        ${renderSidePanel(preset)}
       </section>
     </main>
   `;
