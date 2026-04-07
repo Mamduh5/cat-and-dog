@@ -1,0 +1,33 @@
+export const DOM_IDS = {
+  canvas: "gameCanvas",
+  modeLabel: "modeLabel",
+  turnValue: "turnValue",
+  turnSubtext: "turnSubtext",
+  angleValue: "angleValue",
+  powerValue: "powerValue",
+  windValue: "windValue",
+  shotValue: "shotValue",
+  shotNote: "shotNote",
+  canvasHint: "canvasHint",
+  matchNote: "matchNote",
+  p1Hp: "p1Hp",
+  p2Hp: "p2Hp",
+  p1Bar: "p1Bar",
+  p2Bar: "p2Bar",
+  p1Label: "p1Label",
+  p2Label: "p2Label",
+  menuOverlay: "menuOverlay",
+  endOverlay: "endOverlay",
+  endTitle: "endTitle",
+  endSubtitle: "endSubtitle",
+  turnBanner: "turnBanner",
+  turnBannerLabel: "turnBannerLabel",
+  turnBannerTitle: "turnBannerTitle",
+  difficultyCopy: "difficultyCopy",
+  playCpuButton: "playCpuButton",
+  playLocalButton: "playLocalButton",
+  restartButton: "restartButton",
+  menuButton: "menuButton"
+};
+
+export const DIFFICULTY_SELECTOR = "[data-difficulty]";
