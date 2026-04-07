@@ -84,8 +84,8 @@ export class Game {
   }
 
   async toggleFullscreen() {
-    const root = document.getElementById(DOM_IDS.playRoot);
-    if (!document.fullscreenEnabled || !root) {
+    const gameplaySurface = document.getElementById(DOM_IDS.gameplaySurface);
+    if (!document.fullscreenEnabled || !gameplaySurface) {
       return;
     }
 
@@ -93,7 +93,7 @@ export class Game {
       if (document.fullscreenElement) {
         await document.exitFullscreen();
       } else {
-        await root.requestFullscreen();
+        await gameplaySurface.requestFullscreen();
       }
     } catch {
       this.ui.setFullscreenAvailability(false);

@@ -121,7 +121,7 @@ export class Renderer {
     const normalized = Math.max(-1, Math.min(1, wind / CONFIG.world.maxWind));
     const intensity = Math.abs(normalized);
     ctx.save();
-    ctx.translate(this.canvas.width / 2, 58);
+    ctx.translate(this.canvas.width / 2, 76);
     ctx.fillStyle = "rgba(255, 255, 255, 0.88)";
     this.fillRoundedRect(ctx, -108, -24, 216, 52, 18);
     ctx.fillStyle = "#17304d";
@@ -466,17 +466,27 @@ export class Renderer {
   }
 
   drawCanvasHud(ctx, game) {
-    if (!game.preset.touch || !game.state.mode || game.state.scene === "menu") {
+    if (!game.state.mode || game.state.scene === "menu") {
       return;
     }
 
     const player = game.getCurrentPlayer();
+    const p1 = game.players[0];
+    const p2 = game.players[1];
     const shot = CONFIG.projectileTypes[player.weapon.shotType];
-    const turnLabel = game.state.phase === "gameover" ? "Match Over" : player.name;
     const ammoText = formatAmmoCount(player.getAmmo(player.weapon.shotType));
+    const turnLabel = game.state.phase === "gameover"
+      ? "Match Over"
+      : game.state.phase === "projectile"
+        ? "Shot In Flight"
+        : game.state.phase === "turn-end"
+          ? "Resolving"
+          : player.name;
 
-    this.drawInfoCard(ctx, 18, 18, 194, 58, "Projectile", `${shot.label} ${ammoText}`, shot.shape, shot.coreColor, shot.ringColor);
-    this.drawInfoCard(ctx, this.canvas.width - 206, 18, 188, 58, "Turn", turnLabel, null, "#2f75c0", "rgba(122, 182, 255, 0.95)");
+    this.drawInfoCard(ctx, 16, 14, 136, 44, p1.name, `${p1.health.current} HP`, null, "#f2965a", "rgba(255, 178, 103, 0.95)");
+    this.drawInfoCard(ctx, 162, 14, 170, 44, "Shot", `${shot.label} ${ammoText}`, shot.shape, shot.coreColor, shot.ringColor);
+    this.drawInfoCard(ctx, this.canvas.width - 332, 14, 170, 44, "Turn", turnLabel, null, "#2f75c0", "rgba(255, 241, 180, 0.95)");
+    this.drawInfoCard(ctx, this.canvas.width - 152, 14, 136, 44, p2.name, `${p2.health.current} HP`, null, "#63a1db", "rgba(122, 182, 255, 0.95)");
 
     if (game.state.dragAim) {
       const drag = game.state.dragAim;
@@ -488,27 +498,28 @@ export class Renderer {
 
   drawInfoCard(ctx, x, y, width, height, label, value, shape, coreColor, accentColor) {
     ctx.save();
-    ctx.fillStyle = "rgba(16, 31, 48, 0.76)";
-    this.fillRoundedRect(ctx, x, y, width, height, 18);
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.12)";
+    ctx.fillStyle = "rgba(16, 31, 48, 0.72)";
+    this.fillRoundedRect(ctx, x, y, width, height, 16);
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
     ctx.lineWidth = 1;
-    this.strokeRoundedRect(ctx, x, y, width, height, 18);
+    this.strokeRoundedRect(ctx, x, y, width, height, 16);
 
     if (shape) {
-      this.drawWeaponShape(ctx, shape, x + 24, y + height / 2, 0, 0.9, coreColor, accentColor);
+      this.drawWeaponShape(ctx, shape, x + 20, y + height / 2, 0, 0.78, coreColor, accentColor);
     }
 
-    ctx.fillStyle = "rgba(255, 255, 255, 0.66)";
-    ctx.font = "bold 11px Trebuchet MS";
+    const textX = x + (shape ? 38 : 12);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.62)";
+    ctx.font = "bold 10px Trebuchet MS";
     ctx.textAlign = "left";
-    ctx.fillText(label.toUpperCase(), x + (shape ? 46 : 16), y + 20);
+    ctx.fillText(label.toUpperCase(), textX, y + 15);
 
     ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 17px Trebuchet MS";
-    ctx.fillText(value, x + (shape ? 46 : 16), y + 42);
+    ctx.font = "bold 15px Trebuchet MS";
+    ctx.fillText(value, textX, y + 32);
 
     ctx.fillStyle = accentColor;
-    ctx.fillRect(x + 12, y + height - 7, width - 24, 3);
+    ctx.fillRect(x + 10, y + height - 5, width - 20, 2);
     ctx.restore();
   }
 
@@ -558,3 +569,5 @@ export class Renderer {
     ctx.stroke();
   }
 }
+
+

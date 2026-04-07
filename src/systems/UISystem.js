@@ -1,6 +1,14 @@
 import { CONFIG } from "../config.js";
 import { DOM_IDS, DIFFICULTY_SELECTOR } from "../core/AssetRefs.js";
-import { formatAmmoCount, setText, signLabel } from "../utils/helpers.js";
+import { formatAmmoCount, setText } from "../utils/helpers.js";
+
+const ROTATING_HINTS = [
+  "Drag to aim, release to shoot.",
+  "Wind affects light shots most.",
+  "Heavy shots resist wind better.",
+  "Super is powerful but hard to land.",
+  "Heal consumes your turn."
+];
 
 export class UISystem {
   constructor() {
@@ -11,22 +19,27 @@ export class UISystem {
     this.difficultyButtons = Array.from(document.querySelectorAll(DIFFICULTY_SELECTOR));
     this.touchButtons = Array.from(document.querySelectorAll("[data-input-code]"));
     this.weaponButtons = Array.from(document.querySelectorAll("[data-weapon-key]"));
+    this.lastHintText = "";
+    this.activeHintText = "";
+    this.hintVisibleUntil = 0;
+    this.nextTipAt = 0;
+    this.tipIndex = 0;
   }
 
   bindMenuControls(handlers) {
-    this.refs.playCpuButton.addEventListener("click", handlers.onPlayCpu);
-    this.refs.playLocalButton.addEventListener("click", handlers.onPlayLocal);
-    this.refs.restartButton.addEventListener("click", handlers.onRestart);
-    this.refs.menuButton.addEventListener("click", handlers.onMenu);
+    this.refs.playCpuButton?.addEventListener("click", () => this.showCpuSetup());
+    this.refs.startCpuButton?.addEventListener("click", handlers.onPlayCpu);
+    this.refs.cpuBackButton?.addEventListener("click", () => this.hideCpuSetup());
+    this.refs.playLocalButton?.addEventListener("click", handlers.onPlayLocal);
+    this.refs.restartButton?.addEventListener("click", handlers.onRestart);
+    this.refs.menuButton?.addEventListener("click", handlers.onMenu);
     this.difficultyButtons.forEach((button) => {
       button.addEventListener("click", () => handlers.onDifficulty(button.dataset.difficulty));
     });
   }
 
   bindShellControls(handlers) {
-    if (this.refs.fullscreenButton) {
-      this.refs.fullscreenButton.addEventListener("click", handlers.onFullscreen);
-    }
+    this.refs.fullscreenButton?.addEventListener("click", handlers.onFullscreen);
   }
 
   bindBattleControls(handlers) {
@@ -46,9 +59,7 @@ export class UISystem {
   }
 
   updateFullscreenState(active) {
-    if (this.refs.fullscreenButton) {
-      setText(this.refs.fullscreenButton, active ? "Exit Full" : "Fullscreen");
-    }
+    setText(this.refs.fullscreenButton, active ? "Exit" : "Full");
   }
 
   setDifficulty(level, description) {
@@ -56,7 +67,7 @@ export class UISystem {
       button.classList.toggle("is-active", button.dataset.difficulty === level);
     });
     setText(this.refs.difficultyCopy, description);
-    setText(this.refs.matchNote, `Wind changes every turn. ${CONFIG.cpuProfiles[level].label} CPU is selected for single-player games.`);
+    setText(this.refs.matchNote, `Outside panels are optional. ${CONFIG.cpuProfiles[level].label} CPU is selected for single-player games.`);
   }
 
   setModeLabel(mode, difficulty) {
@@ -69,20 +80,41 @@ export class UISystem {
     }
   }
 
+  showCpuSetup() {
+    this.refs.difficultyPanel?.classList.remove("is-hidden");
+    if (this.refs.playCpuButton) this.refs.playCpuButton.hidden = true;
+    if (this.refs.playLocalButton) this.refs.playLocalButton.hidden = true;
+  }
+
+  hideCpuSetup() {
+    this.refs.difficultyPanel?.classList.add("is-hidden");
+    if (this.refs.playCpuButton) this.refs.playCpuButton.hidden = false;
+    if (this.refs.playLocalButton) this.refs.playLocalButton.hidden = false;
+  }
+
+  resetHintCycle() {
+    this.lastHintText = "";
+    this.activeHintText = "";
+    this.hintVisibleUntil = 0;
+    this.nextTipAt = 0;
+  }
+
   showMenu() {
-    this.refs.menuOverlay.classList.remove("hidden");
-    this.refs.endOverlay.classList.add("hidden");
+    this.hideCpuSetup();
+    this.resetHintCycle();
+    this.refs.menuOverlay?.classList.remove("hidden");
+    this.refs.endOverlay?.classList.add("hidden");
   }
 
   showBattle() {
-    this.refs.menuOverlay.classList.add("hidden");
-    this.refs.endOverlay.classList.add("hidden");
+    this.refs.menuOverlay?.classList.add("hidden");
+    this.refs.endOverlay?.classList.add("hidden");
   }
 
   showEnd(title, subtitle) {
     setText(this.refs.endTitle, title);
     setText(this.refs.endSubtitle, subtitle);
-    this.refs.endOverlay.classList.remove("hidden");
+    this.refs.endOverlay?.classList.remove("hidden");
   }
 
   updateWeaponBar(game, current) {
@@ -99,66 +131,55 @@ export class UISystem {
       button.classList.toggle("is-active", !isHeal && current.weapon.shotType === key && showWeaponBar);
       button.classList.toggle("is-disabled", !current.hasAmmo(key));
       button.disabled = !current.hasAmmo(key);
-      if (countNode) {
-        setText(countNode, formatAmmoCount(count));
-      }
-      if (noteNode) {
-        setText(noteNode, isHeal ? `+${Math.round(current.health.max * config.healRatio)}` : config.label);
-      }
+      setText(countNode, formatAmmoCount(count));
+      setText(noteNode, isHeal ? `+${Math.round(current.health.max * config.healRatio)}` : config.label);
     });
+  }
+
+  resolveHint(game) {
+    const { state } = game;
+    const now = state.elapsedTime;
+    const allowHints = Boolean(state.mode) && state.scene === "battle" && !state.banner.visible && state.phase !== "projectile";
+
+    if (!allowHints) {
+      return { visible: false, text: "" };
+    }
+
+    if (state.hint && state.hint !== this.lastHintText) {
+      this.lastHintText = state.hint;
+      this.activeHintText = state.hint;
+      this.hintVisibleUntil = now + 3;
+      this.nextTipAt = this.hintVisibleUntil + 7;
+    }
+
+    if (now <= this.hintVisibleUntil) {
+      return { visible: true, text: this.activeHintText };
+    }
+
+    if (state.phase === "aiming" && now >= this.nextTipAt) {
+      this.activeHintText = ROTATING_HINTS[this.tipIndex % ROTATING_HINTS.length];
+      this.tipIndex += 1;
+      this.hintVisibleUntil = now + 3;
+      this.nextTipAt = this.hintVisibleUntil + 8;
+      return { visible: true, text: this.activeHintText };
+    }
+
+    return { visible: false, text: this.activeHintText };
   }
 
   update(game) {
     const { state, players } = game;
     const current = players[state.currentPlayerIndex] || players[0];
-    const shot = CONFIG.projectileTypes[current.weapon.shotType];
-    const shotAmmo = current.getAmmo(current.weapon.shotType);
-    const showHint = Boolean(state.mode) && state.scene === "battle" && ["ready", "aiming"].includes(state.phase) && !state.banner.visible && !state.pendingGameOver;
-
     this.setModeLabel(state.mode, state.cpuDifficulty);
-    setText(this.refs.p1Label, players[0].name);
-    setText(this.refs.p2Label, players[1].name);
-    setText(this.refs.p1Hp, `${players[0].health.current}`);
-    setText(this.refs.p2Hp, `${players[1].health.current}`);
-    this.refs.p1Bar.style.width = `${(players[0].health.current / players[0].health.max) * 100}%`;
-    this.refs.p2Bar.style.width = `${(players[1].health.current / players[1].health.max) * 100}%`;
-    setText(this.refs.angleValue, `${Math.round(current.aim.angle)} deg`);
-    setText(this.refs.powerValue, `${Math.round(current.aim.power)}`);
-    setText(this.refs.shotValue, shot.label);
-    setText(this.refs.shotNote, `${shot.note} / ${formatAmmoCount(shotAmmo)} left`);
-    setText(this.refs.windValue, `${signLabel(state.wind)} ${Math.round(Math.abs(state.wind))}`);
-    setText(this.refs.canvasHint, state.hint);
-    this.refs.canvasHint?.classList.toggle("is-hidden", !showHint);
     this.updateWeaponBar(game, current);
 
-    if (!state.mode) {
-      setText(this.refs.turnValue, "Waiting");
-      setText(this.refs.turnSubtext, "Pick a mode to begin.");
-    } else if (state.phase === "gameover") {
-      setText(this.refs.turnValue, "Match Over");
-      setText(this.refs.turnSubtext, "Restart or return to menu.");
-    } else if (state.phase === "ready") {
-      setText(this.refs.turnValue, current.name);
-      setText(this.refs.turnSubtext, "Wind settles before the turn opens.");
-    } else if (state.phase === "windup") {
-      setText(this.refs.turnValue, `${current.name} Throwing`);
-      setText(this.refs.turnSubtext, `${shot.label} shot primed.`);
-    } else if (state.phase === "turn-end") {
-      setText(this.refs.turnValue, "Resolving");
-      setText(this.refs.turnSubtext, "Preparing the next turn.");
-    } else if (game.isCpuTurn()) {
-      setText(this.refs.turnValue, current.name);
-      setText(this.refs.turnSubtext, `${CONFIG.cpuProfiles[state.cpuDifficulty].label} CPU is lining up a play.`);
-    } else if (game.preset.touch) {
-      setText(this.refs.turnValue, current.name);
-      setText(this.refs.turnSubtext, "Drag to aim. Weapon bar appears when you can act.");
-    } else {
-      setText(this.refs.turnValue, current.name);
-      setText(this.refs.turnSubtext, "Adjust, switch weapons, and fire.");
-    }
+    const hint = this.resolveHint(game);
+    setText(this.refs.canvasHint, hint.text);
+    this.refs.canvasHint?.classList.toggle("is-hidden", !hint.visible);
 
-    this.refs.turnBanner.classList.toggle("hidden", !state.banner.visible);
+    this.refs.turnBanner?.classList.toggle("hidden", !state.banner.visible);
     setText(this.refs.turnBannerLabel, state.banner.label);
     setText(this.refs.turnBannerTitle, state.banner.title);
   }
 }
+

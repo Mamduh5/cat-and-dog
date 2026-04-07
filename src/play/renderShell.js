@@ -37,9 +37,8 @@ function renderTouchControls(preset) {
     <section class="panel touch-controls" aria-label="Touch Controls">
       <div class="touch-header">
         <p class="panel-title touch-title">Touch Play</p>
-        <span class="touch-note">Low-value instructions stay hidden outside the arena on phone.</span>
+        <span class="touch-note">Drag from the throwing hand and release to fire.</span>
       </div>
-
       <div class="touch-grid touch-grid-actions">
         <button class="touch-button" data-input-code="KeyR" data-input-mode="tap">Restart</button>
       </div>
@@ -66,18 +65,9 @@ function renderSidePanel(preset) {
         </ul>
       </div>
 
-      <div class="panel notes-panel">
-        <p class="panel-title">Arsenal</p>
-        <p><strong>Normal:</strong> reliable baseline.</p>
-        <p><strong>Light:</strong> faster, wind-sensitive, weaker.</p>
-        <p><strong>Heavy:</strong> slower, heavier, stronger.</p>
-        <p><strong>Super:</strong> special, demanding, powerful.</p>
-        <p><strong>Heal:</strong> one instant recovery action.</p>
-      </div>
-
       <div class="panel notes-panel compact-panel">
         <p class="panel-title">Match Notes</p>
-        <p id="matchNote">Wind changes each turn. Device shell: ${preset.label}. Shared game logic stays the same.</p>
+        <p id="matchNote">Outside panels are optional. The shared battle HUD lives inside the gameplay surface on every device.</p>
       </div>
     </aside>
   `;
@@ -97,51 +87,10 @@ export function renderShell(preset) {
         </div>
       </header>
 
-      <section class="hud" aria-label="Game HUD">
-        <div class="panel stat-card">
-          <span class="stat-label" id="p1Label">P1 HP</span>
-          <strong class="stat-value" id="p1Hp">100</strong>
-          <div class="hp-bar"><div class="hp-fill hp-fill-p1" id="p1Bar"></div></div>
-        </div>
-
-        <div class="panel stat-card">
-          <span class="stat-label" id="p2Label">P2 HP</span>
-          <strong class="stat-value" id="p2Hp">100</strong>
-          <div class="hp-bar"><div class="hp-fill hp-fill-p2" id="p2Bar"></div></div>
-        </div>
-
-        <div class="panel info-card spotlight-card">
-          <span class="stat-label">Turn</span>
-          <strong class="stat-value" id="turnValue">Waiting</strong>
-          <span class="info-note" id="turnSubtext">Pick a mode to begin.</span>
-        </div>
-
-        <div class="panel info-card">
-          <span class="stat-label">Angle</span>
-          <strong class="stat-value" id="angleValue">45 deg</strong>
-        </div>
-
-        <div class="panel info-card">
-          <span class="stat-label">Power</span>
-          <strong class="stat-value" id="powerValue">380</strong>
-        </div>
-
-        <div class="panel info-card">
-          <span class="stat-label">Projectile</span>
-          <strong class="stat-value" id="shotValue">Normal</strong>
-          <span class="info-note" id="shotNote">Balanced</span>
-        </div>
-
-        <div class="panel info-card">
-          <span class="stat-label">Wind</span>
-          <strong class="stat-value" id="windValue">calm 0</strong>
-        </div>
-      </section>
-
       <section class="play-frame">
-        <div class="panel canvas-wrap">
+        <div class="panel canvas-wrap" id="gameplaySurface">
           <canvas id="gameCanvas" width="960" height="540" aria-label="Backyard Ballistics game canvas"></canvas>
-          <button class="canvas-shell-button" id="fullscreenButton" type="button">Fullscreen</button>
+          <button class="canvas-shell-button" id="fullscreenButton" type="button">Full</button>
           ${renderWeaponBar()}
 
           <div class="turn-banner hidden" id="turnBanner" aria-live="polite">
@@ -149,14 +98,20 @@ export function renderShell(preset) {
             <strong class="turn-banner-title" id="turnBannerTitle">P1 Cat</strong>
           </div>
 
-          <div class="canvas-hint" id="canvasHint">Drag from the throwing hand, then release to fire.</div>
+          <div class="canvas-hint is-hidden" id="canvasHint">Drag to aim, release to shoot.</div>
 
           <div class="overlay menu-overlay" id="menuOverlay">
-            <div class="overlay-card">
-              <p class="eyebrow">Pick A Mode</p>
+            <div class="overlay-card menu-card">
+              <p class="menu-kicker">Original Turn-Based Projectile Duel</p>
               <h2>Backyard Ballistics</h2>
-              <p class="overlay-copy">${preset.description}</p>
-              <div class="difficulty-panel">
+              <p class="menu-subtitle">Read the wind. Pick the right shot.</p>
+
+              <div class="menu-actions" id="menuActions">
+                <button class="action-button" id="playCpuButton">Play vs CPU</button>
+                <button class="action-button secondary" id="playLocalButton">2 Players</button>
+              </div>
+
+              <div class="difficulty-panel is-hidden" id="difficultyPanel">
                 <p class="mini-heading">CPU Difficulty</p>
                 <div class="segmented" role="group" aria-label="CPU Difficulty">
                   <button class="segment-button is-active" data-difficulty="easy">Easy</button>
@@ -164,10 +119,10 @@ export function renderShell(preset) {
                   <button class="segment-button" data-difficulty="hard">Hard</button>
                 </div>
                 <p class="difficulty-copy" id="difficultyCopy">Forgiving aim, slower throws, and wider misses.</p>
-              </div>
-              <div class="button-row">
-                <button class="action-button" id="playCpuButton">Play vs CPU</button>
-                <button class="action-button secondary" id="playLocalButton">2 Players</button>
+                <div class="button-row menu-subactions">
+                  <button class="action-button" id="startCpuButton">Start CPU Match</button>
+                  <button class="ghost-button" id="cpuBackButton">Back</button>
+                </div>
               </div>
             </div>
           </div>
