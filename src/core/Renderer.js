@@ -21,7 +21,10 @@ export class Renderer {
     this.drawWindIndicator(ctx, game.state.wind);
     this.drawGround(ctx, game);
     this.drawAimGuide(ctx, game);
-    game.players.forEach((player, index) => this.drawPlayer(ctx, player, game, index === game.state.currentPlayerIndex && ["ready", "aiming", "windup"].includes(game.state.phase)));
+    game.players.forEach((player, index) => {
+      const active = index === game.state.currentPlayerIndex && ["ready", "aiming", "windup"].includes(game.state.phase);
+      this.drawPlayer(ctx, player, game, active);
+    });
     game.particles.forEach((particle) => this.drawParticle(ctx, particle));
     game.shockwaves.forEach((wave) => this.drawShockwave(ctx, wave));
     if (game.projectile) this.drawProjectile(ctx, game.projectile);
@@ -118,7 +121,8 @@ export class Renderer {
     ctx.translate(this.canvas.width / 2, 58);
     ctx.fillStyle = "rgba(255, 255, 255, 0.88)";
     ctx.beginPath();
-    if (typeof ctx.roundRect === "function") ctx.roundRect(-108, -24, 216, 52, 18); else ctx.rect(-108, -24, 216, 52);
+    if (typeof ctx.roundRect === "function") ctx.roundRect(-108, -24, 216, 52, 18);
+    else ctx.rect(-108, -24, 216, 52);
     ctx.fill();
     ctx.fillStyle = "#17304d";
     ctx.font = "bold 16px Trebuchet MS";
@@ -160,8 +164,9 @@ export class Renderer {
     }
     ctx.strokeStyle = "rgba(54, 95, 44, 0.6)";
     ctx.lineWidth = 2;
+    const time = game.state.elapsedTime;
     for (let x = 14; x < this.canvas.width; x += 30) {
-      const sway = Math.sin(performance.now() * 0.003 + x * 0.08 + game.state.wind * 0.01) * 5;
+      const sway = Math.sin(time * 3 + x * 0.08 + game.state.wind * 0.01) * 5;
       ctx.beginPath();
       ctx.moveTo(x, CONFIG.world.groundY + 10);
       ctx.lineTo(x + sway, CONFIG.world.groundY - 8);
@@ -196,7 +201,7 @@ export class Renderer {
   }
 
   drawPlayer(ctx, player, game, isCurrent) {
-    const time = performance.now() * 0.001;
+    const time = game.state.elapsedTime;
     const bob = Math.sin((time + player.id * 0.6 + player.render.idleTime) * 2.3) * CONFIG.player.idleBobAmount;
     const sway = Math.sin((time + player.id * 0.7) * 1.9) * 1.8;
     const hurtShift = player.render.flashTimer > 0 ? Math.sin(player.render.flashTimer * 52) * 3 : 0;
@@ -246,9 +251,17 @@ export class Renderer {
     ctx.fill();
     if (player.species === "cat") {
       ctx.beginPath();
-      ctx.moveTo(-12, -90); ctx.lineTo(-5, -110); ctx.lineTo(2, -88); ctx.closePath(); ctx.fill();
+      ctx.moveTo(-12, -90);
+      ctx.lineTo(-5, -110);
+      ctx.lineTo(2, -88);
+      ctx.closePath();
+      ctx.fill();
       ctx.beginPath();
-      ctx.moveTo(12, -90); ctx.lineTo(5, -110); ctx.lineTo(-2, -88); ctx.closePath(); ctx.fill();
+      ctx.moveTo(12, -90);
+      ctx.lineTo(5, -110);
+      ctx.lineTo(-2, -88);
+      ctx.closePath();
+      ctx.fill();
     } else {
       ctx.fillStyle = colors.ear;
       ctx.beginPath();
@@ -274,17 +287,28 @@ export class Renderer {
     ctx.arc(7, -82, 1.6, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = player.species === "cat" ? "#f28a8a" : "#4f392e";
-    ctx.beginPath(); ctx.arc(0, -74, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath();
+    ctx.arc(0, -74, 4, 0, Math.PI * 2);
+    ctx.fill();
     ctx.strokeStyle = colors.outline;
     ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.moveTo(-4, -70); ctx.quadraticCurveTo(0, -66, 4, -70); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-4, -70);
+    ctx.quadraticCurveTo(0, -66, 4, -70);
+    ctx.stroke();
     const angle = player.aim.angle * Math.PI / 180;
-    const targetX = 20 + Math.cos(angle) * (22 + easeOutCubic(anticipation) * 8) - easeOutCubic(anticipation) * 12;
-    const targetY = -63 - Math.sin(angle) * 22 + easeOutCubic(anticipation) * 2;
+    const aimPull = easeOutCubic(anticipation);
+    const targetX = 20 + Math.cos(angle) * (22 + aimPull * 8) - aimPull * 12;
+    const targetY = -63 - Math.sin(angle) * 22 + aimPull * 2;
     ctx.lineWidth = 5;
-    ctx.beginPath(); ctx.moveTo(10, -53); ctx.lineTo(targetX, targetY); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(10, -53);
+    ctx.lineTo(targetX, targetY);
+    ctx.stroke();
     ctx.fillStyle = colors.accent;
-    ctx.beginPath(); ctx.arc(targetX, targetY, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath();
+    ctx.arc(targetX, targetY, 5, 0, Math.PI * 2);
+    ctx.fill();
     ctx.restore();
   }
 
@@ -293,15 +317,18 @@ export class Renderer {
       const point = projectile.trail[index];
       const alpha = (index + 1) / projectile.trail.length;
       ctx.fillStyle = projectile.shot.trailColor.replace(/0\.\d+\)$/u, `${(alpha * 0.35).toFixed(2)})`);
-      ctx.beginPath(); ctx.arc(point.x, point.y, 1.6 + alpha * 2.3, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, 1.6 + alpha * 2.3, 0, Math.PI * 2);
+      ctx.fill();
     }
-    const x = projectile.transform.x;
-    const y = projectile.transform.y;
+    const { x, y } = projectile.transform;
     const gradient = ctx.createRadialGradient(x - 2, y - 2, 2, x, y, projectile.shot.radius + 4);
     gradient.addColorStop(0, "#fff9e9");
     gradient.addColorStop(1, projectile.shot.coreColor);
     ctx.fillStyle = gradient;
-    ctx.beginPath(); ctx.arc(x, y, projectile.shot.radius, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath();
+    ctx.arc(x, y, projectile.shot.radius, 0, Math.PI * 2);
+    ctx.fill();
     ctx.strokeStyle = "rgba(111, 57, 14, 0.35)";
     ctx.lineWidth = 2;
     ctx.stroke();

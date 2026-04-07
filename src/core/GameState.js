@@ -15,6 +15,7 @@ export class GameState {
     this.banner = { visible: false, label: "Get Ready", title: "P1 Cat" };
     this.cloudOffsetNear = 0;
     this.cloudOffsetFar = 0;
+    this.elapsedTime = 0;
   }
 
   setScene(scene) {

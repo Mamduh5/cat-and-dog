@@ -1,9 +1,6 @@
 import { CONFIG } from "../config.js";
-import { AimComponent } from "../components/AimComponent.js";
 import { HealthComponent } from "../components/HealthComponent.js";
-import { RenderComponent } from "../components/RenderComponent.js";
 import { TransformComponent } from "../components/TransformComponent.js";
-import { WeaponComponent } from "../components/WeaponComponent.js";
 import { DEG_TO_RAD, clamp } from "../utils/math.js";
 
 export class Player {
@@ -14,9 +11,22 @@ export class Player {
     this.facing = options.facing;
     this.transform = new TransformComponent(options.x, CONFIG.world.groundY);
     this.health = new HealthComponent(CONFIG.player.maxHp);
-    this.aim = new AimComponent(CONFIG.aim.defaultAngle, CONFIG.aim.defaultPower);
-    this.render = new RenderComponent(options.colors);
-    this.weapon = new WeaponComponent("normal");
+    this.aim = {
+      angle: CONFIG.aim.defaultAngle,
+      power: CONFIG.aim.defaultPower
+    };
+    this.render = {
+      colors: options.colors,
+      flashTimer: 0,
+      idleTime: Math.random() * 100
+    };
+    this.weapon = {
+      shotType: "normal",
+      anticipationTimer: 0,
+      anticipationDuration: 0.001,
+      recoilTimer: 0,
+      recoilDuration: 0.001
+    };
   }
 
   reset() {

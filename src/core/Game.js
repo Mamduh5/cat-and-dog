@@ -56,48 +56,38 @@ export class Game {
     this.floatingTexts = [];
     this.lastFrame = performance.now();
 
-    this.bindUi();
+    this.ui.bindMenuControls({
+      onPlayCpu: () => this.startGame("cpu"),
+      onPlayLocal: () => this.startGame("local"),
+      onRestart: () => this.startGame(this.state.mode || "cpu"),
+      onMenu: () => this.showMenu(),
+      onDifficulty: (level) => this.setDifficulty(level)
+    });
+
     this.setDifficulty("normal");
     this.showMenu();
     requestAnimationFrame((timestamp) => this.loop(timestamp));
   }
 
-  bindUi() {
-    this.ui.refs.playCpuButton.addEventListener("click", () => this.startGame("cpu"));
-    this.ui.refs.playLocalButton.addEventListener("click", () => this.startGame("local"));
-    this.ui.refs.restartButton.addEventListener("click", () => this.startGame(this.state.mode || "cpu"));
-    this.ui.refs.menuButton.addEventListener("click", () => this.showMenu());
-    this.ui.difficultyButtons.forEach((button) => {
-      button.addEventListener("click", () => this.setDifficulty(button.dataset.difficulty));
-    });
+  clearTransientEffects() {
+    this.projectile = null;
+    this.particles = [];
+    this.shockwaves = [];
+    this.floatingTexts = [];
   }
 
   setDifficulty(level) {
     this.state.cpuDifficulty = CONFIG.cpuProfiles[level] ? level : "normal";
     this.ui.setDifficulty(this.state.cpuDifficulty, CONFIG.cpuProfiles[this.state.cpuDifficulty].description);
-    this.updateModeLabel();
-  }
-
-  updateModeLabel() {
-    const node = this.ui.refs.modeLabel;
-    if (!this.state.mode) {
-      node.textContent = "Mode: Menu";
-    } else if (this.state.mode === "cpu") {
-      node.textContent = `Mode: 1P vs CPU / ${CONFIG.cpuProfiles[this.state.cpuDifficulty].label}`;
-    } else {
-      node.textContent = "Mode: 2 Players";
-    }
   }
 
   startGame(mode) {
     this.battleScene.enter(this);
     this.turnSystem.startMatch(this, mode);
-    this.updateModeLabel();
   }
 
   showMenu() {
     this.menuScene.enter(this);
-    this.updateModeLabel();
   }
 
   startTurn(index) {
@@ -138,16 +128,16 @@ export class Game {
 
   processActions() {
     for (const code of this.input.consumeActions()) {
-      if (this.handleGlobalAction(code)) {
-        continue;
+      if (!this.handleGlobalAction(code)) {
+        this.turnSystem.handleAction(this, code);
       }
-      this.turnSystem.handleAction(this, code);
     }
   }
 
   loop(timestamp) {
     const dt = Math.min(0.033, (timestamp - this.lastFrame) / 1000 || 0.016);
     this.lastFrame = timestamp;
+    this.state.elapsedTime += dt;
     this.processActions();
     this.physicsSystem.updateEffects(this, dt);
     if (this.state.scene === "battle" || this.state.scene === "end") {

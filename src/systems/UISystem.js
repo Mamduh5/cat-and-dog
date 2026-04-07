@@ -11,6 +11,16 @@ export class UISystem {
     this.difficultyButtons = Array.from(document.querySelectorAll(DIFFICULTY_SELECTOR));
   }
 
+  bindMenuControls(handlers) {
+    this.refs.playCpuButton.addEventListener("click", handlers.onPlayCpu);
+    this.refs.playLocalButton.addEventListener("click", handlers.onPlayLocal);
+    this.refs.restartButton.addEventListener("click", handlers.onRestart);
+    this.refs.menuButton.addEventListener("click", handlers.onMenu);
+    this.difficultyButtons.forEach((button) => {
+      button.addEventListener("click", () => handlers.onDifficulty(button.dataset.difficulty));
+    });
+  }
+
   setDifficulty(level, description) {
     this.difficultyButtons.forEach((button) => {
       button.classList.toggle("is-active", button.dataset.difficulty === level);
@@ -19,11 +29,38 @@ export class UISystem {
     setText(this.refs.matchNote, `Wind changes every turn. ${CONFIG.cpuProfiles[level].label} CPU is selected for single-player games.`);
   }
 
+  setModeLabel(mode, difficulty) {
+    if (!mode) {
+      setText(this.refs.modeLabel, "Mode: Menu");
+    } else if (mode === "cpu") {
+      setText(this.refs.modeLabel, `Mode: 1P vs CPU / ${CONFIG.cpuProfiles[difficulty].label}`);
+    } else {
+      setText(this.refs.modeLabel, "Mode: 2 Players");
+    }
+  }
+
+  showMenu() {
+    this.refs.menuOverlay.classList.remove("hidden");
+    this.refs.endOverlay.classList.add("hidden");
+  }
+
+  showBattle() {
+    this.refs.menuOverlay.classList.add("hidden");
+    this.refs.endOverlay.classList.add("hidden");
+  }
+
+  showEnd(title, subtitle) {
+    setText(this.refs.endTitle, title);
+    setText(this.refs.endSubtitle, subtitle);
+    this.refs.endOverlay.classList.remove("hidden");
+  }
+
   update(game) {
     const { state, players } = game;
     const current = players[state.currentPlayerIndex] || players[0];
     const shot = CONFIG.projectileTypes[current.weapon.shotType];
 
+    this.setModeLabel(state.mode, state.cpuDifficulty);
     setText(this.refs.p1Label, players[0].name);
     setText(this.refs.p2Label, players[1].name);
     setText(this.refs.p1Hp, `${players[0].health.current}`);
