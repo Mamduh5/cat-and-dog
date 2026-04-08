@@ -112,10 +112,10 @@ export function renderShell(preset) {
               <div class="difficulty-panel is-hidden" id="difficultyPanel">
                 <p class="mini-heading">CPU Difficulty</p>
                 <div class="segmented" role="group" aria-label="CPU Difficulty">
-                  <button class="segment-button easy" data-difficulty="easy">Easy</button>
-                  <button class="segment-button is-active" data-difficulty="normal">Normal</button>
-                  <button class="segment-button hard" data-difficulty="hard">Hard</button>
-                  <button class="segment-button impossible" data-difficulty="impossible">Impossible</button>
+                  <button class="segment-button easy is-active" data-difficulty="easy">Easy</button>
+                  <button class="segment-button normal is-active" data-difficulty="normal">Normal</button>
+                  <button class="segment-button hard is-active" data-difficulty="hard">Hard</button>
+                  <button class="segment-button impossible is-active" data-difficulty="impossible">Impossible</button>
                 </div>
                 <p class="difficulty-copy" id="difficultyCopy">Solid read, believable mistakes.</p>
                 <div class="button-row menu-subactions">

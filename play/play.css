@@ -420,25 +420,22 @@ canvas {
   font-size: 0.76rem;
 }
 
-.segment-button.easy {
+.segment-button.easy.is-active {
   background: linear-gradient(135deg, #4ddf4d, #2fc069);
   color: white;
-
 }
 
-.segment-button.hard {
+.segment-button.hard.is-active {
   background: linear-gradient(135deg, #df4d4d, #c02f2f);
   color: white;
-
 }
 
-.segment-button.impossible {
+.segment-button.impossible.is-active {
   background: linear-gradient(135deg, #df4ddd, #c02fbe);
   color: white;
-
 }
 
-.segment-button.is-active {
+.segment-button.normal.is-active {
   background: linear-gradient(135deg, #d3df4d, #bbc02f);
   color: white;
 }
@@ -725,9 +722,19 @@ body.device-mobile {
   }
 }
 
-@media (orientation: landscape) and (max-height: 920px) {
+@media (orientation: landscape) and (max-height: 860px) {
+  .device-mobile .play-shell {
+    width: 100%;
+  }
+
+  .device-mobile .canvas-wrap {
+    padding: 4px;
+  }
+
   .device-mobile #gameplaySurface {
-    max-width: min(100%, calc((100dvh - 40px) * 1.56));
+    display: block;
+    width: min(100%, calc((100dvh - 20px) * 1.56));
+    height: auto;
     margin-inline: auto;
   }
 }
