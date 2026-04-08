@@ -715,9 +715,19 @@ body.device-mobile {
   }
 }
 
-@media (orientation: landscape) and (max-height: 1424px) {
+@media (orientation: landscape) and (max-height: 1260px) {
+  .device-tablet .play-shell {
+    width: 100%;
+  }
+
+  .device-tablet .canvas-wrap {
+    padding: 4px;
+  }
+
   .device-tablet #gameplaySurface {
-    max-width: min(100%, calc((100dvh - 102px) * 1.56));
+    display: block;
+    width: min(100%, calc((100dvh - 20px) * 1.56));
+    height: auto;
     margin-inline: auto;
   }
 }
