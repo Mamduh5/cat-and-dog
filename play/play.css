@@ -366,8 +366,8 @@ canvas {
 
 .menu-actions {
   display: grid;
-  gap: 4px;
-  margin-top: 0px;
+  gap: 6px;
+  margin-top: 12px;
 }
 
 .difficulty-panel {
@@ -440,7 +440,7 @@ canvas {
 .button-row {
   display: flex;
   justify-content: center;
-  gap: 5px;
+  gap: 8px;
   flex-wrap: wrap;
   margin-top: 12px;
 }
