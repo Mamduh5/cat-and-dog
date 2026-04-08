@@ -21,7 +21,7 @@ export const CONFIG = {
     angleTap: 1.8,
     defaultAngle: 42,
     powerMin: 330,
-    powerMax: 980,
+    powerMax: 840,
     powerSpeed: 280,
     powerTap: 18,
     defaultPower: 500
