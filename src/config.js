@@ -69,7 +69,7 @@ export const CONFIG = {
       ammo: Infinity,
       shape: "ball",
       weight: 1,
-      launchSpeedMultiplier: 1.04,
+      launchSpeedMultiplier: 1.01,
       gravityMultiplier: 1.04,
       windInfluenceMultiplier: 1.22,
       radius: 7,
@@ -126,7 +126,7 @@ export const CONFIG = {
       weight: 1.72,
       launchSpeedMultiplier: 0.89,
       gravityMultiplier: 1.3,
-      windInfluenceMultiplier: 0.46,
+      windInfluenceMultiplier: 0.73,
       radius: 9.2,
       damageMin: 14,
       damageMax: 31,
@@ -295,9 +295,9 @@ export const CONFIG = {
     }
   },
   sound: {
-    masterVolume: 8,
+    masterVolume: 7,
     attackFloor: 0.001,
-    maxVolume: 15,
+    maxVolume: 12,
     effects: {
       start: 5,
       launch: 5,
