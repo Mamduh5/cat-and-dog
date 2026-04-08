@@ -20,8 +20,8 @@ export const CONFIG = {
     angleSpeed: 82,
     angleTap: 1.8,
     defaultAngle: 42,
-    powerMin: 310,
-    powerMax: 760,
+    powerMin: 330,
+    powerMax: 980,
     powerSpeed: 280,
     powerTap: 18,
     defaultPower: 500
@@ -126,7 +126,7 @@ export const CONFIG = {
       weight: 1.72,
       launchSpeedMultiplier: 0.89,
       gravityMultiplier: 1.3,
-      windInfluenceMultiplier: 0.73,
+      windInfluenceMultiplier: 0.46,
       radius: 9.2,
       damageMin: 14,
       damageMax: 31,
@@ -299,11 +299,11 @@ export const CONFIG = {
     attackFloor: 0.001,
     maxVolume: 12,
     effects: {
-      start: 5,
-      launch: 5,
-      impact: 5.2,
-      win: 5,
-      lose: 5
+      start: 3,
+      launch: 3,
+      impact: 3.2,
+      win: 3,
+      lose: 3
     }
   }
 };
