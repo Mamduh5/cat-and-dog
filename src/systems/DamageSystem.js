@@ -1,13 +1,19 @@
 import { CONFIG } from "../config.js";
 import { FloatingText } from "../entities/FloatingText.js";
 import { Particle } from "../entities/Particle.js";
+import { Projectile } from "../entities/Projectile.js";
 import { Shockwave } from "../entities/Shockwave.js";
-import { distance, lerp, randRange } from "../utils/math.js";
+import { DEG_TO_RAD, distance, lerp, randRange } from "../utils/math.js";
 
 export class DamageSystem {
+  removeProjectile(game, projectile) {
+    game.projectiles = game.projectiles.filter((entry) => entry !== projectile);
+  }
+
   resolveImpact(game, x, y, impact) {
-    const shot = impact.projectile.shot;
-    game.projectile = null;
+    const { projectile } = impact;
+    const shot = projectile.shot;
+    this.removeProjectile(game, projectile);
     game.shockwaves.push(new Shockwave({ x, y, toRadius: shot.splashRadius * 0.9 }));
 
     let highestDamage = 0;
@@ -22,7 +28,7 @@ export class DamageSystem {
         vx: Math.cos(angle) * force,
         vy: Math.sin(angle) * force - randRange(20, 90),
         life: randRange(0.22, CONFIG.particles.maxLife),
-        radius: randRange(2.4, 6.4),
+        radius: randRange(2.4, 6.4) * (shot.renderScale ?? 1),
         color: index % 3 === 0 ? shot.coreColor : "#ffdca4",
         gravityScale: 0.46,
         fadeScale: 1.2
@@ -65,15 +71,55 @@ export class DamageSystem {
       game.state.screenShake = Math.max(game.state.screenShake, shot.shake + (wasDirect ? 2.5 : 0));
     }
 
+    if (shot.fragmentCount) {
+      this.spawnHeavyFragments(game, projectile, x, y, shot.fragmentCount, shot.fragmentSpeedMin, shot.fragmentSpeedMax);
+    }
+
     game.state.pendingGameOver = game.players.some((player) => player.health.current <= 0);
-    game.state.phase = "turn-end";
-    game.state.turnTimer = game.state.pendingGameOver ? CONFIG.turn.endPause : CONFIG.turn.impactPause;
     game.state.hint = wasDirect ? "Clean direct hit." : highestDamage > 0 ? "Splash damage landed." : "Missed clean. Wind will change next turn.";
+
+    if (game.projectiles.length === 0 && game.state.projectileQueue.length === 0) {
+      game.turnSystem.finishProjectileSequence(game);
+    }
   }
 
-  useHeal(game, player) {
+  spawnHeavyFragments(game, projectile, x, y, count, speedMin, speedMax) {
+    const shot = CONFIG.specialProjectiles.heavyShard;
+    const owner = game.players[projectile.ownerIndex];
+    const baseAngles = [225, 270, 315];
+
+    for (let index = 0; index < count; index += 1) {
+      const angle = (baseAngles[index] + randRange(-12, 12)) * DEG_TO_RAD;
+      const speed = randRange(speedMin, speedMax);
+      game.projectiles.push(new Projectile({
+        x,
+        y: y - 4,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        ownerId: projectile.ownerId,
+        ownerIndex: projectile.ownerIndex,
+        targetIndex: projectile.targetIndex,
+        shotKey: "heavy",
+        shot,
+        sourceTag: "heavy-shard"
+      }));
+      game.particles.push(new Particle({
+        x,
+        y,
+        vx: randRange(-60, 60),
+        vy: randRange(-140, -36),
+        life: randRange(0.16, 0.28),
+        radius: randRange(1.6, 3.2),
+        color: owner.render.colors.accent,
+        gravityScale: 0.3,
+        fadeScale: 1.1
+      }));
+    }
+  }
+
+  useHeal(game, player, options = {}) {
     const healItem = CONFIG.items.heal;
-    const healAmount = Math.round(player.health.max * healItem.healRatio);
+    const healAmount = options.full ? player.health.max : Math.round(player.health.max * healItem.healRatio);
     const actual = player.heal(healAmount);
     if (actual <= 0) {
       return 0;
@@ -81,26 +127,26 @@ export class DamageSystem {
 
     player.consumeAmmo("heal");
     const anchor = player.getDamageAnchor();
-    game.shockwaves.push(new Shockwave({ x: anchor.x, y: anchor.y, toRadius: 44, color: "rgba(182, 255, 204," }));
-    game.floatingTexts.push(new FloatingText({ x: anchor.x, y: anchor.y - 18, text: `+${actual}`, color: "#dbffdf", size: 24, rise: 34 }));
+    game.shockwaves.push(new Shockwave({ x: anchor.x, y: anchor.y, toRadius: options.full ? 62 : 44, color: "rgba(182, 255, 204," }));
+    game.floatingTexts.push(new FloatingText({ x: anchor.x, y: anchor.y - 18, text: `+${actual}`, color: "#dbffdf", size: options.full ? 28 : 24, rise: 34 }));
 
-    for (let index = 0; index < 18; index += 1) {
+    for (let index = 0; index < (options.full ? 28 : 18); index += 1) {
       const angle = randRange(0, Math.PI * 2);
-      const force = randRange(48, 122);
+      const force = randRange(48, options.full ? 156 : 122);
       game.particles.push(new Particle({
         x: anchor.x,
         y: anchor.y,
         vx: Math.cos(angle) * force,
         vy: Math.sin(angle) * force - randRange(18, 70),
-        life: randRange(0.26, 0.58),
-        radius: randRange(2.6, 5.4),
+        life: randRange(0.26, 0.62),
+        radius: randRange(2.6, 5.8),
         color: index % 2 === 0 ? healItem.coreColor : "#d7ffe0",
         gravityScale: 0.32,
         fadeScale: 1.1
       }));
     }
 
-    game.state.hint = `${player.name} recovered ${actual} HP.`;
+    game.state.hint = options.full ? `${player.name} cheats back to full HP.` : `${player.name} recovered ${actual} HP.`;
     return actual;
   }
 }

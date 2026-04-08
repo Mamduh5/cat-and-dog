@@ -1,7 +1,14 @@
 import { CONFIG } from "../config.js";
 import { Projectile } from "../entities/Projectile.js";
 import { Particle } from "../entities/Particle.js";
-import { randRange, clamp } from "../utils/math.js";
+import { clamp, randRange } from "../utils/math.js";
+
+const normalizeAngle = (value) => {
+  let angle = value;
+  while (angle > Math.PI) angle -= Math.PI * 2;
+  while (angle < -Math.PI) angle += Math.PI * 2;
+  return angle;
+};
 
 export class PhysicsSystem {
   updateEffects(game, dt) {
@@ -26,6 +33,57 @@ export class PhysicsSystem {
     });
   }
 
+  createProjectileSpec(player, shotKey, shot, angle, power, overrides = {}) {
+    const radians = angle * Math.PI / 180;
+    const launchPoint = player.getLaunchPoint();
+    const launchSpeed = power * shot.launchSpeedMultiplier * (overrides.speedScale ?? 1);
+    return {
+      delay: overrides.delay ?? 0,
+      x: launchPoint.x + (overrides.xOffset ?? 0),
+      y: launchPoint.y + (overrides.yOffset ?? 0),
+      vx: Math.cos(radians + (overrides.angleOffsetRad ?? 0)) * launchSpeed * player.facing,
+      vy: -Math.sin(radians + (overrides.angleOffsetRad ?? 0)) * launchSpeed,
+      ownerId: player.id,
+      ownerIndex: player.id - 1,
+      targetIndex: player.id === 1 ? 1 : 0,
+      shotKey,
+      shot,
+      sourceTag: overrides.sourceTag || "main"
+    };
+  }
+
+  spawnProjectile(game, spec) {
+    const projectile = new Projectile(spec);
+    game.projectiles.push(projectile);
+    this.addLaunchBurst(game, projectile.transform.x, projectile.transform.y, game.players[spec.ownerIndex].facing, projectile.shot, projectile.meta.sourceTag);
+    return projectile;
+  }
+
+  queueProjectile(game, spec) {
+    if ((spec.delay ?? 0) <= 0) {
+      this.spawnProjectile(game, spec);
+      return;
+    }
+    game.state.projectileQueue.push(spec);
+  }
+
+  flushQueuedProjectiles(game, dt) {
+    if (game.state.projectileQueue.length === 0) {
+      return;
+    }
+
+    const remaining = [];
+    for (const spec of game.state.projectileQueue) {
+      spec.delay -= dt;
+      if (spec.delay <= 0) {
+        this.spawnProjectile(game, spec);
+      } else {
+        remaining.push(spec);
+      }
+    }
+    game.state.projectileQueue = remaining;
+  }
+
   launchPreparedShot(game) {
     const prepared = game.state.preparedThrow;
     if (!prepared) {
@@ -34,39 +92,56 @@ export class PhysicsSystem {
 
     const player = game.players[prepared.playerIndex];
     const shot = CONFIG.projectileTypes[prepared.shotKey];
-    const spawn = player.getLaunchPoint();
-    const angle = prepared.angle * Math.PI / 180;
-    const launchSpeed = prepared.power * shot.launchSpeedMultiplier;
-
-    game.projectile = new Projectile({
-      x: spawn.x,
-      y: spawn.y,
-      vx: Math.cos(angle) * launchSpeed * player.facing,
-      vy: -Math.sin(angle) * launchSpeed,
-      ownerId: player.id,
-      shotKey: prepared.shotKey,
-      shot
-    });
-
     player.consumeAmmo(prepared.shotKey);
     player.ensureSelectableShot();
     player.setRecoil(shot.recoil);
     game.state.preparedThrow = null;
     game.state.phase = "projectile";
-    game.state.hint = `${player.name} launched a ${shot.label.toLowerCase()} shot.`;
-    game.state.screenShake = Math.max(game.state.screenShake, 2.6);
-    this.addLaunchBurst(game, spawn.x, spawn.y, player.facing, shot);
+    game.state.projectileQueue = [];
+    game.state.screenShake = Math.max(game.state.screenShake, 2.4);
+
+    if (prepared.shotKey === "light") {
+      this.launchLightBurst(game, player, prepared, shot);
+      game.state.hint = `${player.name} sprays a light burst.`;
+    } else {
+      this.spawnProjectile(game, this.createProjectileSpec(player, prepared.shotKey, shot, prepared.angle, prepared.power));
+      if (prepared.bossEcho) {
+        const echoShot = CONFIG.specialProjectiles.bossEcho;
+        this.queueProjectile(game, this.createProjectileSpec(player, "normal", echoShot, prepared.angle, prepared.power, {
+          delay: 0.15,
+          angleOffsetRad: randRange(-0.08, 0.08),
+          speedScale: 0.94,
+          sourceTag: "bossEcho"
+        }));
+        game.state.hint = `${player.name} cheats in an echo shot.`;
+      } else {
+        game.state.hint = `${player.name} launched a ${shot.label.toLowerCase()} shot.`;
+      }
+    }
   }
 
-  addLaunchBurst(game, x, y, facing, shot) {
-    for (let index = 0; index < shot.launchBurst; index += 1) {
+  launchLightBurst(game, player, prepared, shot) {
+    const burstAngles = [0, shot.burstSpread * Math.PI / 180, -shot.burstSpread * 1.45 * Math.PI / 180];
+    for (let index = 0; index < shot.burstCount; index += 1) {
+      this.queueProjectile(game, this.createProjectileSpec(player, prepared.shotKey, shot, prepared.angle, prepared.power, {
+        delay: index * shot.burstDelay,
+        angleOffsetRad: burstAngles[index] ?? 0,
+        speedScale: 1 - index * shot.burstPowerFalloff,
+        sourceTag: `burst-${index + 1}`
+      }));
+    }
+  }
+
+  addLaunchBurst(game, x, y, facing, shot, sourceTag = "main") {
+    const burstScale = sourceTag === "bossEcho" ? 0.7 : sourceTag.startsWith("burst-") ? 0.52 : 1;
+    for (let index = 0; index < Math.max(4, Math.round(shot.launchBurst * burstScale)); index += 1) {
       game.particles.push(new Particle({
         x,
         y,
-        vx: randRange(-28, 70) * facing,
-        vy: randRange(-70, 15),
-        life: randRange(0.18, 0.35),
-        radius: randRange(2, 4.5),
+        vx: randRange(-28, 70) * facing * burstScale,
+        vy: randRange(-70, 15) * burstScale,
+        life: randRange(0.16, 0.34),
+        radius: randRange(1.6, 4.2) * burstScale,
         color: shot.coreColor,
         gravityScale: 0.2,
         fadeScale: 1.4
@@ -74,15 +149,23 @@ export class PhysicsSystem {
     }
   }
 
-  updateProjectile(game, dt) {
-    const projectile = game.projectile;
+  updateProjectiles(game, dt) {
+    this.flushQueuedProjectiles(game, dt);
+
+    for (const projectile of [...game.projectiles]) {
+      this.updateProjectile(game, projectile, dt);
+    }
+  }
+
+  updateProjectile(game, projectile, dt) {
     const speed = Math.abs(projectile.transform.vx) + Math.abs(projectile.transform.vy);
     const steps = clamp(Math.ceil((speed * dt) / CONFIG.projectile.maxStepPixels), 1, 8);
     const stepDt = dt / steps;
 
     for (let step = 0; step < steps; step += 1) {
       const shot = projectile.shot;
-      const windAcceleration = game.state.wind * shot.windInfluenceMultiplier / shot.weight;
+      this.applyTracking(game, projectile, stepDt);
+      const windAcceleration = game.state.wind * shot.windInfluenceMultiplier / (shot.weight || 1);
       projectile.transform.vx += windAcceleration * stepDt;
       projectile.transform.vy += CONFIG.world.gravity * shot.gravityMultiplier * stepDt;
       projectile.transform.x += projectile.transform.vx * stepDt;
@@ -92,9 +175,37 @@ export class PhysicsSystem {
       if (projectile.trail.length > CONFIG.projectile.trailPoints) {
         projectile.trail.shift();
       }
-      if (game.collisionSystem.checkProjectile(game)) {
+      if (game.collisionSystem.checkProjectile(game, projectile)) {
         break;
       }
     }
   }
+
+  applyTracking(game, projectile, dt) {
+    const shot = projectile.shot;
+    if (!shot.trackingDelay || projectile.age < shot.trackingDelay) {
+      return;
+    }
+
+    const target = game.players[projectile.targetIndex ?? (projectile.ownerIndex === 0 ? 1 : 0)];
+    if (!target || target.health.current <= 0) {
+      return;
+    }
+
+    const anchor = target.getDamageAnchor();
+    const desiredAngle = Math.atan2(anchor.y - projectile.transform.y, anchor.x - projectile.transform.x);
+    const currentAngle = Math.atan2(projectile.transform.vy, projectile.transform.vx || 0.001);
+    const turn = clamp(normalizeAngle(desiredAngle - currentAngle), -shot.trackingTurnRate * dt, shot.trackingTurnRate * dt);
+    const currentSpeed = Math.hypot(projectile.transform.vx, projectile.transform.vy);
+    const maxSpeed = projectile.meta.baseSpeed * (shot.trackingMaxSpeedMultiplier ?? 1);
+    const nextSpeed = Math.min(maxSpeed, currentSpeed + (shot.trackingAcceleration ?? 0) * dt);
+    const nextAngle = currentAngle + turn;
+
+    projectile.meta.trackingActive = true;
+    projectile.transform.vx = Math.cos(nextAngle) * nextSpeed;
+    projectile.transform.vy = Math.sin(nextAngle) * nextSpeed;
+  }
 }
+
+
+

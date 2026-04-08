@@ -2,8 +2,7 @@ import { CONFIG } from "../config.js";
 import { clamp, distance } from "../utils/math.js";
 
 export class CollisionSystem {
-  checkProjectile(game) {
-    const projectile = game.projectile;
+  checkProjectile(game, projectile) {
     if (!projectile) {
       return true;
     }
@@ -27,7 +26,12 @@ export class CollisionSystem {
       projectile.transform.x > CONFIG.canvas.width + 80 ||
       projectile.transform.y > CONFIG.canvas.height + 80
     ) {
-      game.damageSystem.resolveImpact(game, clamp(projectile.transform.x, 0, CONFIG.canvas.width), clamp(projectile.transform.y, 0, CONFIG.world.groundY), { projectile });
+      game.damageSystem.resolveImpact(
+        game,
+        clamp(projectile.transform.x, 0, CONFIG.canvas.width),
+        clamp(projectile.transform.y, 0, CONFIG.world.groundY),
+        { projectile }
+      );
       return true;
     }
 

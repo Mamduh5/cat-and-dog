@@ -9,7 +9,7 @@ export class TurnSystem {
     game.state.phase = "ready";
     game.state.currentPlayerIndex = 0;
     game.state.pendingGameOver = false;
-    game.state.preparedThrow = null;
+    game.state.clearProjectileFlow();
     game.state.cpuPlan = null;
     game.state.clearDragAim();
     game.clearTransientEffects();
@@ -46,7 +46,7 @@ export class TurnSystem {
     }
 
     if (game.state.phase === "projectile") {
-      game.physicsSystem.updateProjectile(game, dt);
+      game.physicsSystem.updateProjectiles(game, dt);
       return;
     }
 
@@ -68,17 +68,20 @@ export class TurnSystem {
     game.state.cpuPlan = null;
 
     if (game.isCpuTurn()) {
-      const plan = game.aiSystem.chooseShot(game);
+      const plan = game.aiSystem.chooseShot(game, { followUp: game.state.isBossFollowUpTurn });
       game.state.cpuPlan = plan;
       if (plan.action === "heal") {
         game.state.cpuTimer = plan.delay;
-        game.state.hint = `${player.name} is deciding whether to patch up.`;
+        game.state.hint = plan.fullHeal ? `${player.name} sizes up a shameless full heal.` : `${player.name} is deciding whether to patch up.`;
       } else {
         player.weapon.shotType = plan.shotKey;
         player.aim.angle = plan.angle;
         player.aim.power = plan.power;
         game.state.cpuTimer = plan.delay;
-        game.state.hint = `${player.name} is reading the wind...`;
+        if (plan.bossEcho && plan.bossDouble) game.state.hint = `${player.name} lines up something blatantly unfair.`;
+        else if (plan.bossEcho) game.state.hint = `${player.name} is hiding a cheat shot.`;
+        else if (plan.bossDouble) game.state.hint = `${player.name} plans to fire twice.`;
+        else game.state.hint = `${player.name} is reading the wind...`;
       }
     } else if (game.preset.touch) {
       game.state.hint = "Drag back from the throwing hand, then release to fire.";
@@ -223,14 +226,17 @@ export class TurnSystem {
     }
 
     game.state.clearDragAim();
+    const plan = game.state.cpuPlan;
     game.state.cpuPlan = null;
-    const healed = game.damageSystem.useHeal(game, player);
+    const healed = game.damageSystem.useHeal(game, player, { full: Boolean(force && plan?.fullHeal) });
     if (healed <= 0) {
       game.state.hint = `${player.name} could not recover any more HP.`;
       return;
     }
 
     player.ensureSelectableShot();
+    game.state.isBossFollowUpTurn = false;
+    game.state.bossShotsRemaining = 0;
     game.state.phase = "turn-end";
     game.state.pendingGameOver = false;
     game.state.turnTimer = CONFIG.turn.healPause;
@@ -247,12 +253,15 @@ export class TurnSystem {
     }
 
     const shot = CONFIG.projectileTypes[player.weapon.shotType];
+    const bossPlan = force ? game.state.cpuPlan : null;
     game.state.preparedThrow = {
       playerIndex: game.state.currentPlayerIndex,
       angle: player.aim.angle,
       power: player.aim.power,
-      shotKey: player.weapon.shotType
+      shotKey: player.weapon.shotType,
+      bossEcho: Boolean(bossPlan?.bossEcho)
     };
+    game.state.bossShotsRemaining = bossPlan?.bossDouble && !game.state.isBossFollowUpTurn ? 1 : 0;
     game.state.cpuPlan = null;
     game.state.clearDragAim();
     player.setAnticipation(shot.windup);
@@ -261,16 +270,40 @@ export class TurnSystem {
     game.state.hint = `${player.name} winds up a ${shot.label.toLowerCase()} shot...`;
   }
 
+  finishProjectileSequence(game) {
+    game.state.pendingGameOver = game.players.some((player) => player.health.current <= 0);
+
+    const impossibleFollowUp = !game.state.pendingGameOver
+      && game.state.mode === "cpu"
+      && game.state.cpuDifficulty === "impossible"
+      && game.state.currentPlayerIndex === 1
+      && game.state.bossShotsRemaining > 0;
+
+    if (impossibleFollowUp) {
+      game.state.bossShotsRemaining -= 1;
+      game.state.isBossFollowUpTurn = true;
+      game.state.phase = "ready";
+      game.state.turnTimer = CONFIG.turn.bossFollowUpPause;
+      game.state.showBanner("Cheater Turn", "Boss Fires Again");
+      game.state.hint = "Impossible bot steals a second shot.";
+      return;
+    }
+
+    game.state.isBossFollowUpTurn = false;
+    game.state.phase = "turn-end";
+    game.state.turnTimer = game.state.pendingGameOver ? CONFIG.turn.endPause : CONFIG.turn.impactPause;
+  }
+
   startTurn(game, index) {
     const player = game.players[index];
     game.state.currentPlayerIndex = index;
     game.state.phase = "ready";
     game.state.turnTimer = CONFIG.turn.readyPause;
     game.state.pendingGameOver = false;
-    game.state.preparedThrow = null;
+    game.state.clearProjectileFlow();
     game.state.cpuPlan = null;
     game.state.clearDragAim();
-    game.projectile = null;
+    game.projectiles = [];
     game.state.wind = clamp(
       randRange(-CONFIG.world.maxWind, CONFIG.world.maxWind) + randRange(-CONFIG.world.windJitter, CONFIG.world.windJitter),
       -CONFIG.world.maxWind,

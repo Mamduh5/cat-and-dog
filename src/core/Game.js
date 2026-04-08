@@ -51,7 +51,7 @@ export class Game {
       })
     ];
 
-    this.projectile = null;
+    this.projectiles = [];
     this.particles = [];
     this.shockwaves = [];
     this.floatingTexts = [];
@@ -101,10 +101,12 @@ export class Game {
   }
 
   clearTransientEffects() {
-    this.projectile = null;
+    this.projectiles = [];
     this.particles = [];
     this.shockwaves = [];
     this.floatingTexts = [];
+    this.state.projectileQueue = [];
+    this.state.preparedThrow = null;
   }
 
   setDifficulty(level) {

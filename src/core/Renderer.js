@@ -29,7 +29,7 @@ export class Renderer {
     if (game.state.dragAim) this.drawDragAim(ctx, game);
     game.particles.forEach((particle) => this.drawParticle(ctx, particle));
     game.shockwaves.forEach((wave) => this.drawShockwave(ctx, wave));
-    if (game.projectile) this.drawProjectile(ctx, game.projectile);
+    game.projectiles.forEach((projectile) => this.drawProjectile(ctx, projectile));
     game.floatingTexts.forEach((text) => this.drawFloatingText(ctx, text));
     ctx.restore();
     this.drawCanvasHud(ctx, game);
@@ -42,18 +42,19 @@ export class Renderer {
     sky.addColorStop(1, "#f5ddab");
     ctx.fillStyle = sky;
     ctx.fillRect(0, 0, this.canvas.width, CONFIG.world.groundY);
+
     ctx.fillStyle = "#fff4b4";
     ctx.beginPath();
     ctx.arc(120, 92, 38, 0, Math.PI * 2);
     ctx.fill();
+
     this.drawCloud(ctx, 90 + (game.state.cloudOffsetFar * 0.6) % 1120 - 160, 120, 0.9, 0.88);
     this.drawCloud(ctx, 340 + (game.state.cloudOffsetNear * 0.7) % 1080 - 180, 74, 0.78, 0.94);
     this.drawCloud(ctx, 740 + (game.state.cloudOffsetFar * 0.4) % 1160 - 190, 144, 1.04, 0.86);
-    ctx.fillStyle = "#b1c6d7";
-    ctx.fillRect(0, 255, this.canvas.width, 70);
-    this.drawHouse(ctx, 90, 278, "#9bb6c8");
-    this.drawHouse(ctx, 290, 286, "#b6c8d8");
-    this.drawHouse(ctx, 635, 280, "#9eb6c9");
+
+    ctx.fillStyle = "#b8cada";
+    ctx.fillRect(0, 258, this.canvas.width, 64);
+
     ctx.fillStyle = "#9dbe7c";
     ctx.beginPath();
     ctx.moveTo(0, CONFIG.world.groundY);
@@ -64,22 +65,12 @@ export class Renderer {
     ctx.lineTo(0, this.canvas.height);
     ctx.closePath();
     ctx.fill();
+
     this.drawFence(ctx);
     this.drawBush(ctx, 46, 404, 1.1);
     this.drawBush(ctx, 262, 416, 0.94);
     this.drawBush(ctx, 665, 410, 1.08);
     this.drawBush(ctx, 852, 418, 0.9);
-  }
-
-  drawHouse(ctx, x, y, color) {
-    ctx.fillStyle = color;
-    ctx.fillRect(x, y - 54, 84, 54);
-    ctx.beginPath();
-    ctx.moveTo(x - 10, y - 54);
-    ctx.lineTo(x + 42, y - 86);
-    ctx.lineTo(x + 94, y - 54);
-    ctx.closePath();
-    ctx.fill();
   }
 
   drawFence(ctx) {
@@ -187,7 +178,7 @@ export class Renderer {
     const dragging = Boolean(game.state.dragAim);
     ctx.save();
     for (let step = 0; step < (dragging ? 25 : 22); step += 1) {
-      vx += game.state.wind * shot.windInfluenceMultiplier * 0.055;
+      vx += game.state.wind * shot.windInfluenceMultiplier / shot.weight * 0.055;
       vy += CONFIG.world.gravity * shot.gravityMultiplier * 0.055;
       x += vx * 0.055;
       y += vy * 0.055;
@@ -364,8 +355,8 @@ export class Renderer {
     for (let index = 0; index < projectile.trail.length; index += 1) {
       const point = projectile.trail[index];
       const alpha = (index + 1) / projectile.trail.length;
-      const radius = (projectile.shot.radius * 0.18 + alpha * projectile.shot.radius * 0.22) * trailScale;
-      ctx.fillStyle = projectile.shot.trailColor.replace(/0\.\d+\)$/u, `${(alpha * 0.4).toFixed(2)})`);
+      const radius = (projectile.shot.radius * 0.18 + alpha * projectile.shot.radius * 0.22) * trailScale * (projectile.shot.renderScale ?? 1);
+      ctx.fillStyle = projectile.shot.trailColor.replace(/0\.\d+\)$/u, `${(alpha * 0.42).toFixed(2)})`);
       ctx.beginPath();
       ctx.arc(point.x, point.y, radius, 0, Math.PI * 2);
       ctx.fill();
@@ -378,7 +369,7 @@ export class Renderer {
       ctx.save();
       ctx.translate(x, y);
       ctx.rotate(angle + Math.PI);
-      ctx.fillStyle = "rgba(255, 226, 164, 0.82)";
+      ctx.fillStyle = projectile.meta.trackingActive ? "rgba(255, 134, 110, 0.86)" : "rgba(255, 226, 164, 0.82)";
       ctx.beginPath();
       ctx.moveTo(0, 0);
       ctx.lineTo(-12, -4);
@@ -386,10 +377,16 @@ export class Renderer {
       ctx.lineTo(-12, 4);
       ctx.closePath();
       ctx.fill();
+      if (projectile.meta.trackingActive) {
+        ctx.fillStyle = "rgba(255, 240, 204, 0.72)";
+        ctx.beginPath();
+        ctx.arc(-16, 0, 5, 0, Math.PI * 2);
+        ctx.fill();
+      }
       ctx.restore();
     }
 
-    this.drawWeaponShape(ctx, projectile.shot.shape, x, y, angle, 1, projectile.shot.coreColor, projectile.shot.ringColor);
+    this.drawWeaponShape(ctx, projectile.shot.shape, x, y, angle, projectile.shot.renderScale ?? 1, projectile.shot.coreColor, projectile.shot.ringColor);
   }
 
   drawWeaponShape(ctx, shape, x, y, rotation, scale, fillColor, strokeColor) {
@@ -588,6 +585,3 @@ export class Renderer {
     ctx.stroke();
   }
 }
-
-
-

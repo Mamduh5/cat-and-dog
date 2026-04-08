@@ -4,9 +4,9 @@ import { formatAmmoCount, setText } from "../utils/helpers.js";
 
 const ROTATING_HINTS = [
   "Drag to aim, release to shoot.",
-  "Wind affects light shots most.",
-  "Heavy shots resist wind better.",
-  "Super is powerful but hard to land.",
+  "Light fires a 3-shot burst.",
+  "Heavy breaks into falling shards.",
+  "Super starts tracking after a delay.",
   "Heal consumes your turn."
 ];
 
@@ -132,7 +132,7 @@ export class UISystem {
       button.classList.toggle("is-disabled", !current.hasAmmo(key));
       button.disabled = !current.hasAmmo(key);
       setText(countNode, formatAmmoCount(count));
-      setText(noteNode, isHeal ? `+${Math.round(current.health.max * config.healRatio)}` : config.label);
+      setText(noteNode, isHeal ? `+${Math.round(current.health.max * config.healRatio)}` : config.note);
     });
   }
 
@@ -182,5 +182,3 @@ export class UISystem {
     setText(this.refs.turnBannerTitle, state.banner.title);
   }
 }
-
-

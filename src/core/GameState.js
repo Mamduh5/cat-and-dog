@@ -11,6 +11,9 @@ export class GameState {
     this.cpuTimer = 0;
     this.cpuPlan = null;
     this.preparedThrow = null;
+    this.projectileQueue = [];
+    this.bossShotsRemaining = 0;
+    this.isBossFollowUpTurn = false;
     this.screenShake = 0;
     this.hint = "Choose a mode to start a new match.";
     this.banner = { visible: false, label: "Get Ready", title: "P1 Cat" };
@@ -50,5 +53,12 @@ export class GameState {
 
   clearDragAim() {
     this.dragAim = null;
+  }
+
+  clearProjectileFlow() {
+    this.preparedThrow = null;
+    this.projectileQueue = [];
+    this.bossShotsRemaining = 0;
+    this.isBossFollowUpTurn = false;
   }
 }

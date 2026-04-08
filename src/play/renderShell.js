@@ -2,9 +2,9 @@ import { WEAPON_BAR_ORDER } from "../utils/helpers.js";
 
 const WEAPON_META = {
   normal: { label: "Normal", note: "Ball", iconClass: "weapon-icon-normal" },
-  light: { label: "Light", note: "Stick", iconClass: "weapon-icon-light" },
-  heavy: { label: "Heavy", note: "Rock", iconClass: "weapon-icon-heavy" },
-  super: { label: "Super", note: "Rocket", iconClass: "weapon-icon-super" },
+  light: { label: "Light", note: "Burst", iconClass: "weapon-icon-light" },
+  heavy: { label: "Heavy", note: "Shards", iconClass: "weapon-icon-heavy" },
+  super: { label: "Super", note: "Tracks", iconClass: "weapon-icon-super" },
   heal: { label: "Heal", note: "+35%", iconClass: "weapon-icon-heal" }
 };
 
@@ -67,7 +67,7 @@ function renderSidePanel(preset) {
 
       <div class="panel notes-panel compact-panel">
         <p class="panel-title">Match Notes</p>
-        <p id="matchNote">Shared battle HUD inside the gameplay surface. Outside panels stay secondary.</p>
+        <p id="matchNote">CPU: Solid read, believable mistakes.</p>
       </div>
     </aside>
   `;
@@ -112,9 +112,10 @@ export function renderShell(preset) {
               <div class="difficulty-panel is-hidden" id="difficultyPanel">
                 <p class="mini-heading">CPU Difficulty</p>
                 <div class="segmented" role="group" aria-label="CPU Difficulty">
-                  <button class="segment-button is-active" data-difficulty="easy">Easy</button>
-                  <button class="segment-button" data-difficulty="normal">Normal</button>
+                  <button class="segment-button" data-difficulty="easy">Easy</button>
+                  <button class="segment-button is-active" data-difficulty="normal">Normal</button>
                   <button class="segment-button" data-difficulty="hard">Hard</button>
+                  <button class="segment-button" data-difficulty="impossible">Impossible</button>
                 </div>
                 <p class="difficulty-copy" id="difficultyCopy">Solid read, believable mistakes.</p>
                 <div class="button-row menu-subactions">
