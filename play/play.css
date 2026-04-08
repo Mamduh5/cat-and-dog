@@ -372,7 +372,7 @@ canvas {
 
 .difficulty-panel {
   margin-top: 12px;
-  padding: 10px;
+  padding: 2px;
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.5);
   border: 1px solid rgba(23, 48, 77, 0.08);
@@ -440,9 +440,9 @@ canvas {
 .button-row {
   display: flex;
   justify-content: center;
-  gap: 10px;
+  gap: 5px;
   flex-wrap: wrap;
-  margin-top: 16px;
+  margin-top: 12px;
 }
 
 .action-button {
