@@ -21,7 +21,7 @@ export const CONFIG = {
     angleTap: 1.8,
     defaultAngle: 42,
     powerMin: 330,
-    powerMax: 1420,
+    powerMax: 980,
     powerSpeed: 280,
     powerTap: 18,
     defaultPower: 500
@@ -295,9 +295,9 @@ export const CONFIG = {
     }
   },
   sound: {
-    masterVolume: 6,
+    masterVolume: 4,
     attackFloor: 0.001,
-    maxVolume: 9,
+    maxVolume: 7,
     effects: {
       start: 3,
       launch: 3,
