@@ -295,15 +295,15 @@ export const CONFIG = {
     }
   },
   sound: {
-    masterVolume: 3,
+    masterVolume: 2.5,
     attackFloor: 0.001,
-    maxVolume: 5,
+    maxVolume: 4,
     effects: {
-      start: 2.4,
-      launch: 2.4,
-      impact: 2.5,
-      win: 2.4,
-      lose: 2.4
+      start: 2,
+      launch: 2,
+      impact: 2.1,
+      win: 2,
+      lose: 2
     }
   }
 };
