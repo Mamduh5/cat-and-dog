@@ -314,34 +314,42 @@ export class Renderer {
 
   drawPlayer(ctx, player, game, isCurrent) {
     const time = game.state.elapsedTime;
-    const bob = Math.sin((time + player.id * 0.6 + player.render.idleTime) * 2.3) * CONFIG.player.idleBobAmount;
-    const sway = Math.sin((time + player.id * 0.7) * 1.9) * 1.8;
+    const defeat = player.render.defeatProgress;
+    const bob = Math.sin((time + player.id * 0.6 + player.render.idleTime) * 2.3) * CONFIG.player.idleBobAmount * (1 - defeat * 0.65);
+    const sway = Math.sin((time + player.id * 0.7) * 1.9) * 1.8 * (1 - defeat * 0.8);
     const hurtShift = player.render.flashTimer > 0 ? Math.sin(player.render.flashTimer * 52) * 3 : 0;
     const flash = player.render.flashTimer > 0 ? 0.26 : 0;
     const anticipation = player.weapon.anticipationTimer > 0 ? 1 - player.weapon.anticipationTimer / player.weapon.anticipationDuration : 0;
     const recoil = player.weapon.recoilTimer > 0 ? 1 - player.weapon.recoilTimer / player.weapon.recoilDuration : 0;
     const colors = player.render.colors;
+    const bodyPull = easeOutCubic(anticipation) * CONFIG.player.anticipationLift * (1 - defeat);
+    const bodyRecoil = Math.sin(recoil * Math.PI) * CONFIG.player.recoilAmount * (1 - defeat);
+    const tilt = defeat * CONFIG.player.defeatTilt;
+    const fade = 1 - defeat * CONFIG.player.defeatFade;
+
     ctx.save();
-    ctx.translate(player.transform.x + hurtShift, CONFIG.world.groundY + bob);
-    ctx.scale(player.facing, 1);
+    ctx.globalAlpha = fade;
+    ctx.translate(player.transform.x + hurtShift, CONFIG.world.groundY + bob + defeat * CONFIG.player.defeatDrop);
+    ctx.scale(player.facing, Math.max(0.74, 1 - defeat * 0.22));
+
     ctx.fillStyle = "rgba(24, 39, 58, 0.16)";
     ctx.beginPath();
-    ctx.ellipse(0, -2, 34, 10, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, -1 + defeat * 2, 34 + defeat * 8, 10 - defeat * 3.4, 0, 0, Math.PI * 2);
     ctx.fill();
-    if (isCurrent) {
+    if (isCurrent && defeat < 0.08) {
       ctx.strokeStyle = "rgba(255, 250, 236, 0.95)";
       ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.arc(0, -52, 40, 0, Math.PI * 2);
       ctx.stroke();
     }
-    const bodyPull = easeOutCubic(anticipation) * CONFIG.player.anticipationLift;
-    const bodyRecoil = Math.sin(recoil * Math.PI) * CONFIG.player.recoilAmount;
-    ctx.translate(-bodyRecoil * 0.8, -bodyPull);
-    ctx.rotate(sway * Math.PI / 180);
+
+    ctx.translate(-bodyRecoil * 0.8, -bodyPull + defeat * 6);
+    ctx.rotate(sway * Math.PI / 180 - tilt);
+
     ctx.fillStyle = colors.legs;
-    ctx.fillRect(-12, -34, 8, 30);
-    ctx.fillRect(5, -34, 8, 30);
+    ctx.fillRect(-12, -34 + defeat * 5, 8, 30 - defeat * 6);
+    ctx.fillRect(5, -34 + defeat * 5, 8, 30 - defeat * 6);
     ctx.fillStyle = colors.body;
     ctx.beginPath();
     ctx.ellipse(0, -42, 25, 28, 0, 0, Math.PI * 2);
@@ -393,11 +401,22 @@ export class Renderer {
     ctx.arc(-7, -82, 3.5, 0, Math.PI * 2);
     ctx.arc(7, -82, 3.5, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = "#17304d";
-    ctx.beginPath();
-    ctx.arc(-7, -82, 1.6, 0, Math.PI * 2);
-    ctx.arc(7, -82, 1.6, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.strokeStyle = colors.outline;
+    if (defeat > 0.2) {
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      ctx.moveTo(-10, -82);
+      ctx.lineTo(-4, -79);
+      ctx.moveTo(4, -79);
+      ctx.lineTo(10, -82);
+      ctx.stroke();
+    } else {
+      ctx.fillStyle = "#17304d";
+      ctx.beginPath();
+      ctx.arc(-7, -82, 1.6, 0, Math.PI * 2);
+      ctx.arc(7, -82, 1.6, 0, Math.PI * 2);
+      ctx.fill();
+    }
     ctx.fillStyle = player.species === "cat" ? "#f28a8a" : "#4f392e";
     ctx.beginPath();
     ctx.arc(0, -74, 4, 0, Math.PI * 2);
@@ -406,12 +425,16 @@ export class Renderer {
     ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.moveTo(-4, -70);
-    ctx.quadraticCurveTo(0, -66, 4, -70);
+    ctx.quadraticCurveTo(0, -66 + defeat * 6, 4, -70);
     ctx.stroke();
     const angle = player.aim.angle * Math.PI / 180;
-    const aimPull = easeOutCubic(anticipation);
-    const targetX = 20 + Math.cos(angle) * (22 + aimPull * 8) - aimPull * 12;
-    const targetY = -63 - Math.sin(angle) * 22 + aimPull * 2;
+    const aimPull = easeOutCubic(anticipation) * (1 - defeat);
+    const liveTargetX = 20 + Math.cos(angle) * (22 + aimPull * 8) - aimPull * 12;
+    const liveTargetY = -63 - Math.sin(angle) * 22 + aimPull * 2;
+    const droopTargetX = 14;
+    const droopTargetY = -34;
+    const targetX = liveTargetX + (droopTargetX - liveTargetX) * defeat;
+    const targetY = liveTargetY + (droopTargetY - liveTargetY) * defeat;
     ctx.lineWidth = 5;
     ctx.beginPath();
     ctx.moveTo(10, -53);
@@ -419,7 +442,7 @@ export class Renderer {
     ctx.stroke();
     ctx.fillStyle = colors.accent;
     ctx.beginPath();
-    ctx.arc(targetX, targetY, 5, 0, Math.PI * 2);
+    ctx.arc(targetX, targetY, 5 - defeat * 1.6, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
   }
@@ -660,3 +683,4 @@ export class Renderer {
     ctx.stroke();
   }
 }
+

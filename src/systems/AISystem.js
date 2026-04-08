@@ -53,11 +53,16 @@ export class AISystem {
   }
 
   chooseImpossibleShot(game, cpu, target, profile, options) {
-    if (!options.followUp && cpu.hasAmmo("heal") && cpu.health.current <= cpu.health.max * profile.fullHealThreshold) {
+    const wallAlive = Boolean(game.state.wall && !game.state.wall.destroyed);
+    const targetLead = target.health.current - cpu.health.current;
+    const desperate = cpu.health.current <= cpu.health.max * profile.fullHealThreshold;
+    const pressured = cpu.health.current <= profile.killPressureHp || targetLead >= 10;
+
+    if (!options.followUp && cpu.hasAmmo("heal") && (desperate || pressured)) {
       return {
         action: "heal",
         fullHeal: true,
-        delay: randRange(profile.delayMin * 0.75, profile.delayMax * 0.85)
+        delay: randRange(profile.delayMin * 0.72, profile.delayMax * 0.84)
       };
     }
 
@@ -66,22 +71,30 @@ export class AISystem {
     for (let angle = CONFIG.aim.angleMin; angle <= CONFIG.aim.angleMax; angle += profile.angleStep) {
       for (let power = CONFIG.aim.powerMin; power <= CONFIG.aim.powerMax; power += profile.powerStep) {
         const result = this.simulate(game, cpu, target, shot, angle, power);
-        candidates.push({ angle, power, score: result.score * profile.scoreBias });
+        candidates.push({ angle, power, score: result.score * profile.scoreBias, ...result });
       }
     }
 
     candidates.sort((a, b) => a.score - b.score);
-    const pool = candidates.slice(0, profile.topChoices);
-    const pick = pool[randInt(0, Math.min(pool.length - 1, profile.choiceSpread))] || candidates[0];
+    const best = candidates[0];
+    const cleanPunish = best.directHit || best.bestDistance <= profile.punishWindow;
+    const killWindow = target.health.current <= profile.killPressureHp;
+    const stablePick = candidates.find((candidate) => !candidate.wallHit && candidate.bestDistance <= profile.punishWindow + 8) || best;
+    const bossDouble = !options.followUp && (cleanPunish || killWindow || Math.random() < profile.doubleShotChance);
+    const bossEcho = cleanPunish || (!wallAlive && target.health.current <= CONFIG.player.maxHp * 0.62) || Math.random() < profile.echoShotChance;
+    const chosen = cleanPunish ? stablePick : best;
+    const angleJitter = cleanPunish ? profile.angleJitter * 0.55 : profile.angleJitter;
+    const powerJitter = cleanPunish ? profile.powerJitter * 0.55 : profile.powerJitter;
 
     return {
       action: "projectile",
       shotKey: "normal",
-      angle: Math.max(CONFIG.aim.angleMin, Math.min(CONFIG.aim.angleMax, pick.angle + randRange(-profile.angleJitter, profile.angleJitter))),
-      power: Math.max(CONFIG.aim.powerMin, Math.min(CONFIG.aim.powerMax, pick.power + randRange(-profile.powerJitter, profile.powerJitter))),
+      angle: Math.max(CONFIG.aim.angleMin, Math.min(CONFIG.aim.angleMax, chosen.angle + randRange(-angleJitter, angleJitter))),
+      power: Math.max(CONFIG.aim.powerMin, Math.min(CONFIG.aim.powerMax, chosen.power + randRange(-powerJitter, powerJitter))),
       delay: randRange(profile.delayMin, profile.delayMax),
-      bossDouble: !options.followUp && Math.random() < profile.doubleShotChance,
-      bossEcho: Math.random() < profile.echoShotChance
+      bossDouble,
+      bossEcho,
+      cleanPunish
     };
   }
 
@@ -95,13 +108,17 @@ export class AISystem {
   simulateBurst(game, cpu, target, shot, angle, power) {
     const offsets = [0, shot.burstSpread, -shot.burstSpread * 1.45];
     let bestScore = Number.POSITIVE_INFINITY;
+    let bestDistance = Number.POSITIVE_INFINITY;
+    let directHit = false;
 
     for (let index = 0; index < shot.burstCount; index += 1) {
       const result = this.simulateSingle(game, cpu, target, shot, angle + (offsets[index] ?? 0), power * (1 - index * shot.burstPowerFalloff));
       bestScore = Math.min(bestScore, result.score + index * 2.2);
+      bestDistance = Math.min(bestDistance, result.bestDistance);
+      directHit ||= result.directHit;
     }
 
-    return { score: bestScore };
+    return { score: bestScore, bestDistance, directHit, wallHit: false };
   }
 
   simulateSingle(game, cpu, target, shot, angle, power) {
@@ -113,6 +130,7 @@ export class AISystem {
     let bestDistance = Number.POSITIVE_INFINITY;
     let finalDistance = Number.POSITIVE_INFINITY;
     let directHit = false;
+    let wallHit = false;
 
     for (let step = 0; step < 380; step += 1) {
       if (shot.trackingDelay && step / 60 >= shot.trackingDelay) {
@@ -138,6 +156,7 @@ export class AISystem {
 
       const wallPenalty = this.checkWall(game, x, y, shot.radius);
       if (wallPenalty.hit) {
+        wallHit = true;
         finalDistance = currentDistance + wallPenalty.penalty;
         break;
       }
@@ -168,7 +187,12 @@ export class AISystem {
     }
 
     const splashScore = Math.max(0, finalDistance - shot.splashRadius * 0.7);
-    return { score: directHit ? -35 : Math.min(bestDistance, splashScore * 1.06 + bestDistance * 0.24) };
+    return {
+      score: directHit ? -35 : Math.min(bestDistance, splashScore * 1.06 + bestDistance * 0.24),
+      directHit,
+      bestDistance,
+      wallHit
+    };
   }
 
   checkWall(game, x, y, radius) {

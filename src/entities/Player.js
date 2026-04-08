@@ -19,7 +19,9 @@ export class Player {
     this.render = {
       colors: options.colors,
       flashTimer: 0,
-      idleTime: Math.random() * 100
+      idleTime: Math.random() * 100,
+      defeated: false,
+      defeatProgress: 0
     };
     this.weapon = {
       shotType: "normal",
@@ -48,6 +50,8 @@ export class Player {
     this.weapon.shotType = "normal";
     this.weapon.ammo = this.createAmmoState();
     this.render.flashTimer = 0;
+    this.render.defeated = false;
+    this.render.defeatProgress = 0;
     this.weapon.anticipationTimer = 0;
     this.weapon.recoilTimer = 0;
   }
@@ -57,16 +61,30 @@ export class Player {
     this.render.flashTimer = Math.max(0, this.render.flashTimer - dt);
     this.weapon.anticipationTimer = Math.max(0, this.weapon.anticipationTimer - dt);
     this.weapon.recoilTimer = Math.max(0, this.weapon.recoilTimer - dt);
+    if (this.render.defeated) {
+      this.render.defeatProgress = clamp(this.render.defeatProgress + dt / CONFIG.player.defeatDuration, 0, 1);
+    }
   }
 
   takeDamage(amount) {
+    const previous = this.health.current;
     this.health.current = clamp(this.health.current - amount, 0, this.health.max);
     this.render.flashTimer = 0.34;
+    if (previous > 0 && this.health.current <= 0) {
+      this.render.defeated = true;
+      this.render.defeatProgress = 0;
+      this.weapon.anticipationTimer = 0;
+      this.weapon.recoilTimer = 0;
+    }
   }
 
   heal(amount) {
     const before = this.health.current;
     this.health.current = clamp(this.health.current + amount, 0, this.health.max);
+    if (this.health.current > 0) {
+      this.render.defeated = false;
+      this.render.defeatProgress = 0;
+    }
     return this.health.current - before;
   }
 

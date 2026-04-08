@@ -49,7 +49,11 @@ export const CONFIG = {
     handOffsetY: 63,
     idleBobAmount: 4,
     anticipationLift: 7,
-    recoilAmount: 7
+    recoilAmount: 7,
+    defeatDuration: 0.72,
+    defeatDrop: 16,
+    defeatTilt: 1.18,
+    defeatFade: 0.52
   },
   projectile: {
     maxStepPixels: 16,
@@ -206,9 +210,9 @@ export const CONFIG = {
       gravityMultiplier: 0.98,
       windInfluenceMultiplier: 1.18,
       radius: 5.6,
-      damageMin: 4,
-      damageMax: 9,
-      directBonus: 4,
+      damageMin: 6,
+      damageMax: 11,
+      directBonus: 6,
       splashRadius: 32,
       trailColor: "rgba(199, 173, 255, 0.34)",
       coreColor: "#a679ff",
@@ -276,17 +280,20 @@ export const CONFIG = {
       description: "Cheats shamelessly. Good luck.",
       angleStep: 1,
       powerStep: 6,
-      topChoices: 3,
-      choiceSpread: 1,
-      angleJitter: 1.1,
-      powerJitter: 8,
-      delayMin: 0.38,
-      delayMax: 0.62,
-      scoreBias: 0.72,
-      doubleShotChance: 0.48,
-      echoShotChance: 0.36,
-      fullHealThreshold: 0.7
+      topChoices: 2,
+      choiceSpread: 0,
+      angleJitter: 0.65,
+      powerJitter: 5,
+      delayMin: 0.34,
+      delayMax: 0.54,
+      scoreBias: 0.64,
+      doubleShotChance: 0.74,
+      echoShotChance: 0.62,
+      fullHealThreshold: 0.82,
+      killPressureHp: 44,
+      punishWindow: 18
     }
   }
 };
+
 

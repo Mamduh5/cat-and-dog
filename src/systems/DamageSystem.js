@@ -21,6 +21,7 @@ export class DamageSystem {
 
     this.removeProjectile(game, projectile);
     this.spawnExplosionFx(game, x, y, shot);
+    game.sound.play("impact", { heavy: shot.shape === "rock" || shot.shape === "rocket", wall: Boolean(impact.wallTarget) });
     const result = this.applyImpactDamage(game, x, y, impact, shot);
 
     if (result.wasDirect) {
@@ -43,6 +44,7 @@ export class DamageSystem {
     this.removeProjectile(game, projectile);
     const result = this.applyImpactDamage(game, x, y, impact, shot);
 
+    game.sound.play("impact", { heavy: true, wall: Boolean(impact.wallTarget) });
     game.state.screenShake = Math.max(game.state.screenShake, 3.4 + (result.wasDirect ? 1.8 : 0));
     game.state.hint = result.wasDirect ? "Heavy impact landed. Burst incoming." : result.wallDamage > 0 ? "Heavy rock lodged in the wall." : "Heavy shot stuck. Burst incoming.";
     game.state.pendingGameOver = game.players.some((player) => player.health.current <= 0);
@@ -61,6 +63,7 @@ export class DamageSystem {
   detonateHeavyBurst(game, burst) {
     const shot = CONFIG.projectileTypes.heavy;
     this.spawnExplosionFx(game, burst.x, burst.y, shot);
+    game.sound.play("impact", { heavy: true });
     this.spawnHeavyFragments(game, burst.x, burst.y, burst.ownerId, burst.ownerIndex, burst.targetIndex, shot.fragmentCount, shot.fragmentSpeedMin, shot.fragmentSpeedMax);
     game.state.hint = "Heavy burst scatters shards.";
     this.finishIfSettled(game);
@@ -111,6 +114,7 @@ export class DamageSystem {
       }
 
       if (damage > 0) {
+        const wasAlive = player.health.current > 0;
         highestDamage = Math.max(highestDamage, damage);
         player.takeDamage(damage);
         game.floatingTexts.push(new FloatingText({
@@ -121,6 +125,18 @@ export class DamageSystem {
           size: direct ? 24 : 20,
           rise: direct ? 46 : 36
         }));
+        if (wasAlive && player.health.current <= 0) {
+          game.floatingTexts.push(new FloatingText({
+            x: anchor.x,
+            y: anchor.y - 40,
+            text: "K.O.",
+            color: "#ffd978",
+            size: 28,
+            life: 0.9,
+            rise: 18
+          }));
+          game.state.screenShake = Math.max(game.state.screenShake, shot.shake + 2.4);
+        }
       }
     }
 
@@ -248,3 +264,4 @@ export class DamageSystem {
     return actual;
   }
 }
+

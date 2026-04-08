@@ -3,6 +3,7 @@ import { DOM_IDS } from "./AssetRefs.js";
 import { GameState } from "./GameState.js";
 import { Renderer } from "./Renderer.js";
 import { InputManager } from "./InputManager.js";
+import { SoundSystem } from "./SoundSystem.js";
 import { Player } from "../entities/Player.js";
 import { MenuScene } from "../scenes/MenuScene.js";
 import { BattleScene } from "../scenes/BattleScene.js";
@@ -21,6 +22,7 @@ export class Game {
     this.state = new GameState();
     this.input = new InputManager();
     this.input.attach();
+    this.sound = new SoundSystem();
     this.renderer = new Renderer(canvas);
     this.ui = new UISystem();
     this.aiSystem = new AISystem();
@@ -130,6 +132,8 @@ export class Game {
     const alivePlayers = this.players.filter((player) => player.health.current > 0);
     const title = alivePlayers.length === 1 ? `${alivePlayers[0].name} Wins` : "Draw";
     const subtitle = alivePlayers.length === 1 ? "A sharper read of wind, range, and resources settled the round." : "Both fighters dropped at once. Run it back.";
+    const playerWon = alivePlayers.length === 1 && (this.state.mode === "local" || alivePlayers[0] === this.players[0]);
+    this.sound.play(playerWon ? "win" : "lose");
     this.state.hint = "Press Play Again for another round.";
     this.endScene.enter(this, title, subtitle);
   }
@@ -184,5 +188,4 @@ export class Game {
     requestAnimationFrame((next) => this.loop(next));
   }
 }
-
 

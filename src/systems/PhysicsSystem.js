@@ -109,6 +109,7 @@ export class PhysicsSystem {
     player.setRecoil(shot.recoil);
     game.state.preparedThrow = null;
     game.state.phase = "projectile";
+    game.sound.play("launch", { shotKey: prepared.shotKey });
     game.state.projectileQueue = [];
     game.state.screenShake = Math.max(game.state.screenShake, 2.2);
 
@@ -218,3 +219,4 @@ export class PhysicsSystem {
     projectile.transform.vy = Math.sin(nextAngle) * nextSpeed;
   }
 }
+

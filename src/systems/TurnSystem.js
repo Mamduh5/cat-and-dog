@@ -17,6 +17,7 @@ export class TurnSystem {
     game.players[0].name = "P1 Cat";
     game.players[1].name = mode === "cpu" ? "CPU Dog" : "P2 Dog";
     game.players.forEach((player) => player.reset());
+    game.sound.play("start");
     game.startTurn(0);
   }
 
@@ -413,6 +414,8 @@ export class TurnSystem {
     }
   }
 }
+
+
 
 
 
