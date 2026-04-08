@@ -1,7 +1,7 @@
 export const CONFIG = {
   canvas: { width: 960, height: 540 },
   world: {
-    groundY: 455,
+    groundY: 438,
     gravity: 790,
     maxWind: 190,
     windJitter: 26,
@@ -29,9 +29,9 @@ export const CONFIG = {
   touch: {
     pickupRadius: 78,
     dragMin: 24,
-    dragMax: 210,
-    fireThreshold: 40,
-    angleBase: 18
+    dragMax: 188,
+    fireThreshold: 36,
+    angleBase: 20
   },
   turn: {
     readyPause: 0.82,
@@ -289,3 +289,4 @@ export const CONFIG = {
     }
   }
 };
+
