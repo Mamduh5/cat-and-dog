@@ -343,7 +343,7 @@ canvas {
   width: min(430px, calc(100% - 20px));
   max-height: calc(100% - 20px);
   overflow: auto;
-  padding: 20px;
+  padding: 8px;
   border-radius: 22px;
   background:
     radial-gradient(circle at top right, rgba(255, 255, 255, 0.45), transparent 40%),
@@ -415,9 +415,24 @@ canvas {
   border-radius: 12px;
   min-height: 36px;
   padding: 7px 8px;
-  background: rgba(40, 66, 95, 0.08);
   color: var(--ink);
   font-size: 0.76rem;
+}
+
+.segment-button.easy {
+  background: rgba(40, 95, 41, 0.08);
+}
+
+.segment-button.normal {
+  background: rgba(93, 95, 40, 0.08);
+}
+
+.segment-button.hard {
+  background: rgba(95, 40, 40, 0.08);
+}
+
+.segment-button.impossible {
+  background: rgba(95, 40, 91, 0.08);
 }
 
 .segment-button.is-active {
@@ -702,14 +717,14 @@ body.device-mobile {
 
 @media (orientation: landscape) and (max-height: 900px) {
   .device-tablet #gameplaySurface {
-    max-width: min(100%, calc((100dvh - 118px) * 1.56));
+    max-width: min(100%, calc((100dvh - 160px) * 1.56));
     margin-inline: auto;
   }
 }
 
 @media (orientation: landscape) and (max-height: 620px) {
   .device-mobile #gameplaySurface {
-    max-width: min(100%, calc((100dvh - 92px) * 1.56));
+    max-width: min(100%, calc((100dvh - 128px) * 1.56));
     margin-inline: auto;
   }
 }
