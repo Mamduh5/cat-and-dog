@@ -366,13 +366,13 @@ canvas {
 
 .menu-actions {
   display: grid;
-  gap: 6px;
-  margin-top: 12px;
+  gap: 0px;
+  margin-top: 4px;
 }
 
 .difficulty-panel {
   margin-top: 12px;
-  padding: 2px;
+  padding: 6px;
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.5);
   border: 1px solid rgba(23, 48, 77, 0.08);
