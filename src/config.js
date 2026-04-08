@@ -69,7 +69,7 @@ export const CONFIG = {
       ammo: Infinity,
       shape: "ball",
       weight: 1,
-      launchSpeedMultiplier: 1.01,
+      launchSpeedMultiplier: 1.04,
       gravityMultiplier: 1.04,
       windInfluenceMultiplier: 1.22,
       radius: 7,
