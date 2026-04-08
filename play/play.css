@@ -366,8 +366,8 @@ canvas {
 
 .menu-actions {
   display: grid;
-  gap: 2px;
-  margin-top: 14px;
+  gap: 4px;
+  margin-top: 0px;
 }
 
 .difficulty-panel {
@@ -421,23 +421,19 @@ canvas {
 }
 
 .segment-button.easy {
-  background: rgba(40, 95, 41, 0.08);
-}
-
-.segment-button.normal {
-  background: rgba(93, 95, 40, 0.08);
+  background: linear-gradient(135deg, #4ddf4d, #2fc069);
 }
 
 .segment-button.hard {
-  background: rgba(95, 40, 40, 0.08);
+  background: linear-gradient(135deg, #df4d4d, #c02f2f);
 }
 
 .segment-button.impossible {
-  background: rgba(95, 40, 91, 0.08);
+  background: linear-gradient(135deg, #df4ddd, #c02fbe);
 }
 
 .segment-button.is-active {
-  background: linear-gradient(135deg, #dadf4d, #bbc02f);
+  background: linear-gradient(135deg, #d3df4d, #bbc02f);
   color: white;
 }
 
@@ -716,14 +712,14 @@ body.device-mobile {
   }
 }
 
-@media (orientation: landscape) and (max-height: 900px) {
+@media (orientation: landscape) and (max-height: 1024px) {
   .device-tablet #gameplaySurface {
     max-width: min(100%, calc((100dvh - 102px) * 1.56));
     margin-inline: auto;
   }
 }
 
-@media (orientation: landscape) and (max-height: 620px) {
+@media (orientation: landscape) and (max-height: 420px) {
   .device-mobile #gameplaySurface {
     max-width: min(100%, calc((100dvh - 86px) * 1.56));
     margin-inline: auto;
