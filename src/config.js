@@ -293,6 +293,18 @@ export const CONFIG = {
       killPressureHp: 44,
       punishWindow: 18
     }
+  },
+  sound: {
+    masterVolume: 1.8,
+    attackFloor: 0.001,
+    maxVolume: 3,
+    effects: {
+      start: 1,
+      launch: 1,
+      impact: 1.1,
+      win: 1,
+      lose: 1
+    }
   }
 };
 
