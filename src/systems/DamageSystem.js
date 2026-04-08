@@ -13,11 +13,61 @@ export class DamageSystem {
   resolveImpact(game, x, y, impact) {
     const { projectile } = impact;
     const shot = projectile.shot;
-    this.removeProjectile(game, projectile);
-    game.shockwaves.push(new Shockwave({ x, y, toRadius: shot.splashRadius * 0.9 }));
 
-    let highestDamage = 0;
-    let wasDirect = false;
+    if (shot.fragmentCount && projectile.meta.sourceTag !== "heavy-detonation") {
+      this.resolveHeavyImpact(game, x, y, impact);
+      return;
+    }
+
+    this.removeProjectile(game, projectile);
+    this.spawnExplosionFx(game, x, y, shot);
+    const result = this.applyImpactDamage(game, x, y, impact, shot);
+
+    if (result.wasDirect) {
+      game.floatingTexts.push(new FloatingText({ x, y: y - 26, text: "Direct Hit!", color: "#ffd978", size: 26, life: 0.72, rise: 28 }));
+    }
+
+    if (result.highestDamage >= 12 || result.wasDirect || result.wallDamage > 0) {
+      game.state.screenShake = Math.max(game.state.screenShake, shot.shake + (result.wasDirect ? 2.5 : 0));
+    }
+
+    game.state.pendingGameOver = game.players.some((player) => player.health.current <= 0);
+    game.state.hint = this.getImpactHint(result);
+
+    this.finishIfSettled(game);
+  }
+
+  resolveHeavyImpact(game, x, y, impact) {
+    const { projectile } = impact;
+    const shot = projectile.shot;
+    this.removeProjectile(game, projectile);
+    const result = this.applyImpactDamage(game, x, y, impact, shot);
+
+    game.state.screenShake = Math.max(game.state.screenShake, 3.4 + (result.wasDirect ? 1.8 : 0));
+    game.state.hint = result.wasDirect ? "Heavy impact landed. Burst incoming." : result.wallDamage > 0 ? "Heavy rock lodged in the wall." : "Heavy shot stuck. Burst incoming.";
+    game.state.pendingGameOver = game.players.some((player) => player.health.current <= 0);
+
+    game.state.delayedBursts.push({
+      kind: "heavy",
+      x,
+      y,
+      timer: CONFIG.turn.heavyBurstDelay,
+      ownerId: projectile.ownerId,
+      ownerIndex: projectile.ownerIndex,
+      targetIndex: projectile.targetIndex
+    });
+  }
+
+  detonateHeavyBurst(game, burst) {
+    const shot = CONFIG.projectileTypes.heavy;
+    this.spawnExplosionFx(game, burst.x, burst.y, shot);
+    this.spawnHeavyFragments(game, burst.x, burst.y, burst.ownerId, burst.ownerIndex, burst.targetIndex, shot.fragmentCount, shot.fragmentSpeedMin, shot.fragmentSpeedMax);
+    game.state.hint = "Heavy burst scatters shards.";
+    this.finishIfSettled(game);
+  }
+
+  spawnExplosionFx(game, x, y, shot) {
+    game.shockwaves.push(new Shockwave({ x, y, toRadius: shot.splashRadius * 0.9 }));
 
     for (let index = 0; index < shot.explosionParticles; index += 1) {
       const angle = randRange(0, Math.PI * 2);
@@ -33,6 +83,17 @@ export class DamageSystem {
         gravityScale: 0.46,
         fadeScale: 1.2
       }));
+    }
+  }
+
+  applyImpactDamage(game, x, y, impact, shot) {
+    let highestDamage = 0;
+    let wasDirect = false;
+    let wallDamage = 0;
+
+    if (impact.wallTarget && !impact.wallTarget.destroyed) {
+      wallDamage = shot.directDamage ?? shot.damageMax + shot.directBonus;
+      this.damageWall(game, wallDamage);
     }
 
     for (const player of game.players) {
@@ -63,29 +124,47 @@ export class DamageSystem {
       }
     }
 
-    if (wasDirect) {
-      game.floatingTexts.push(new FloatingText({ x, y: y - 26, text: "Direct Hit!", color: "#ffd978", size: 26, life: 0.72, rise: 28 }));
-    }
-
-    if (highestDamage >= 12 || wasDirect) {
-      game.state.screenShake = Math.max(game.state.screenShake, shot.shake + (wasDirect ? 2.5 : 0));
-    }
-
-    if (shot.fragmentCount) {
-      this.spawnHeavyFragments(game, projectile, x, y, shot.fragmentCount, shot.fragmentSpeedMin, shot.fragmentSpeedMax);
-    }
-
-    game.state.pendingGameOver = game.players.some((player) => player.health.current <= 0);
-    game.state.hint = wasDirect ? "Clean direct hit." : highestDamage > 0 ? "Splash damage landed." : "Missed clean. Wind will change next turn.";
-
-    if (game.projectiles.length === 0 && game.state.projectileQueue.length === 0) {
-      game.turnSystem.finishProjectileSequence(game);
-    }
+    return { highestDamage, wasDirect, wallDamage };
   }
 
-  spawnHeavyFragments(game, projectile, x, y, count, speedMin, speedMax) {
+  damageWall(game, amount) {
+    const wall = game.state.wall;
+    if (!wall || wall.destroyed || amount <= 0) {
+      return 0;
+    }
+
+    const actual = Math.min(amount, wall.hp);
+    wall.hp = Math.max(0, wall.hp - amount);
+    wall.flashTimer = 0.24;
+    game.floatingTexts.push(new FloatingText({ x: wall.x, y: CONFIG.world.groundY - wall.height - 10, text: `-${actual}`, color: "#fff0d2", size: 18, rise: 22 }));
+
+    if (wall.hp <= 0) {
+      wall.destroyed = true;
+      game.shockwaves.push(new Shockwave({ x: wall.x, y: CONFIG.world.groundY - wall.height * 0.48, toRadius: 58 }));
+      game.floatingTexts.push(new FloatingText({ x: wall.x, y: CONFIG.world.groundY - wall.height - 24, text: "Wall Down", color: "#ffe3bf", size: 24, rise: 26 }));
+      for (let index = 0; index < 24; index += 1) {
+        const angle = randRange(-Math.PI, 0);
+        const force = randRange(60, 180);
+        game.particles.push(new Particle({
+          x: wall.x,
+          y: CONFIG.world.groundY - wall.height * 0.45,
+          vx: Math.cos(angle) * force,
+          vy: Math.sin(angle) * force,
+          life: randRange(0.22, 0.52),
+          radius: randRange(2.2, 5.2),
+          color: index % 2 === 0 ? "#c6864f" : "#7b5a40",
+          gravityScale: 0.44,
+          fadeScale: 1.1
+        }));
+      }
+    }
+
+    return actual;
+  }
+
+  spawnHeavyFragments(game, x, y, ownerId, ownerIndex, targetIndex, count, speedMin, speedMax) {
     const shot = CONFIG.specialProjectiles.heavyShard;
-    const owner = game.players[projectile.ownerIndex];
+    const owner = game.players[ownerIndex];
     const baseAngles = [225, 270, 315];
 
     for (let index = 0; index < count; index += 1) {
@@ -96,9 +175,9 @@ export class DamageSystem {
         y: y - 4,
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed,
-        ownerId: projectile.ownerId,
-        ownerIndex: projectile.ownerIndex,
-        targetIndex: projectile.targetIndex,
+        ownerId,
+        ownerIndex,
+        targetIndex,
         shotKey: "heavy",
         shot,
         sourceTag: "heavy-shard"
@@ -114,6 +193,25 @@ export class DamageSystem {
         gravityScale: 0.3,
         fadeScale: 1.1
       }));
+    }
+  }
+
+  getImpactHint(result) {
+    if (result.wasDirect) {
+      return "Clean direct hit.";
+    }
+    if (result.wallDamage > 0) {
+      return result.highestDamage > 0 ? "Wall hit and splash damage landed." : "Shot slammed into the wall.";
+    }
+    if (result.highestDamage > 0) {
+      return "Splash damage landed.";
+    }
+    return "Missed clean. Wind will change next turn.";
+  }
+
+  finishIfSettled(game) {
+    if (game.projectiles.length === 0 && game.state.projectileQueue.length === 0 && game.state.delayedBursts.length === 0) {
+      game.turnSystem.finishProjectileSequence(game);
     }
   }
 

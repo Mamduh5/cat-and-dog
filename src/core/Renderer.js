@@ -21,6 +21,7 @@ export class Renderer {
     this.drawBackground(ctx, game);
     this.drawWindIndicator(ctx, game.state.wind);
     this.drawGround(ctx, game);
+    this.drawWall(ctx, game.state.wall);
     this.drawAimGuide(ctx, game);
     game.players.forEach((player, index) => {
       const active = index === game.state.currentPlayerIndex && ["ready", "aiming", "windup"].includes(game.state.phase);
@@ -29,6 +30,7 @@ export class Renderer {
     if (game.state.dragAim) this.drawDragAim(ctx, game);
     game.particles.forEach((particle) => this.drawParticle(ctx, particle));
     game.shockwaves.forEach((wave) => this.drawShockwave(ctx, wave));
+    game.state.delayedBursts.forEach((burst) => this.drawDelayedBurst(ctx, burst));
     game.projectiles.forEach((projectile) => this.drawProjectile(ctx, projectile));
     game.floatingTexts.forEach((text) => this.drawFloatingText(ctx, text));
     ctx.restore();
@@ -51,9 +53,6 @@ export class Renderer {
     this.drawCloud(ctx, 90 + (game.state.cloudOffsetFar * 0.6) % 1120 - 160, 120, 0.9, 0.88);
     this.drawCloud(ctx, 340 + (game.state.cloudOffsetNear * 0.7) % 1080 - 180, 74, 0.78, 0.94);
     this.drawCloud(ctx, 740 + (game.state.cloudOffsetFar * 0.4) % 1160 - 190, 144, 1.04, 0.86);
-
-    ctx.fillStyle = "#b8cada";
-    ctx.fillRect(0, 258, this.canvas.width, 64);
 
     ctx.fillStyle = "#9dbe7c";
     ctx.beginPath();
@@ -163,6 +162,82 @@ export class Renderer {
       ctx.lineTo(x + sway, CONFIG.world.groundY - 8);
       ctx.stroke();
     }
+  }
+
+  drawWall(ctx, wall) {
+    if (!wall || wall.destroyed) {
+      return;
+    }
+
+    const left = wall.x - wall.width / 2;
+    const top = CONFIG.world.groundY - wall.height;
+    const flash = wall.flashTimer > 0 ? 0.28 : 0;
+    const hpRatio = Math.max(0, wall.hp / wall.maxHp);
+
+    ctx.save();
+    ctx.fillStyle = "rgba(45, 36, 30, 0.18)";
+    ctx.beginPath();
+    ctx.ellipse(wall.x, CONFIG.world.groundY + 2, wall.width * 0.7, 10, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "#8b6546";
+    this.fillRoundedRect(ctx, left, top, wall.width, wall.height, 10);
+    if (flash > 0) {
+      ctx.fillStyle = `rgba(255,255,255,${flash})`;
+      this.fillRoundedRect(ctx, left, top, wall.width, wall.height, 10);
+    }
+
+    ctx.strokeStyle = "rgba(72, 50, 35, 0.45)";
+    ctx.lineWidth = 2;
+    for (let row = 1; row < 5; row += 1) {
+      const y = top + row * 24;
+      ctx.beginPath();
+      ctx.moveTo(left + 6, y);
+      ctx.lineTo(left + wall.width - 6, y);
+      ctx.stroke();
+    }
+    for (let col = 1; col < 3; col += 1) {
+      const x = left + col * (wall.width / 3);
+      ctx.beginPath();
+      ctx.moveTo(x, top + 8);
+      ctx.lineTo(x, CONFIG.world.groundY - 6);
+      ctx.stroke();
+    }
+
+    const crackDepth = 1 - hpRatio;
+    if (crackDepth > 0.08) {
+      ctx.strokeStyle = "rgba(59, 40, 28, 0.68)";
+      ctx.lineWidth = 2.4;
+      ctx.beginPath();
+      ctx.moveTo(wall.x - 4, top + 8);
+      ctx.lineTo(wall.x + 3, top + 28 + crackDepth * 8);
+      ctx.lineTo(wall.x - 8, top + 52 + crackDepth * 14);
+      ctx.lineTo(wall.x + 6, top + 78 + crackDepth * 18);
+      ctx.stroke();
+    }
+
+    ctx.fillStyle = "rgba(15, 28, 42, 0.7)";
+    this.fillRoundedRect(ctx, wall.x - 32, top - 16, 64, 8, 4);
+    ctx.fillStyle = "#d17a4a";
+    this.fillRoundedRect(ctx, wall.x - 32, top - 16, 64 * hpRatio, 8, 4);
+    ctx.restore();
+  }
+
+  drawDelayedBurst(ctx, burst) {
+    if (burst.kind !== "heavy") {
+      return;
+    }
+
+    const t = 1 - burst.timer / CONFIG.turn.heavyBurstDelay;
+    ctx.save();
+    ctx.globalAlpha = 0.82;
+    this.drawWeaponShape(ctx, "rock", burst.x, burst.y, t * 0.6, 0.95, "#d8783b", "rgba(255, 186, 119, 0.92)");
+    ctx.strokeStyle = `rgba(255, 212, 170, ${0.24 + t * 0.4})`;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.arc(burst.x, burst.y, 12 + t * 10, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
   }
 
   drawAimGuide(ctx, game) {

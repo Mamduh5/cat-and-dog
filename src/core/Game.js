@@ -105,8 +105,7 @@ export class Game {
     this.particles = [];
     this.shockwaves = [];
     this.floatingTexts = [];
-    this.state.projectileQueue = [];
-    this.state.preparedThrow = null;
+    this.state.clearProjectileFlow();
   }
 
   setDifficulty(level) {
@@ -185,4 +184,5 @@ export class Game {
     requestAnimationFrame((next) => this.loop(next));
   }
 }
+
 

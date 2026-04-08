@@ -1,5 +1,5 @@
 import { CONFIG } from "../config.js";
-import { distance, DEG_TO_RAD, randInt, randRange } from "../utils/math.js";
+import { clamp, distance, DEG_TO_RAD, randInt, randRange } from "../utils/math.js";
 import { ATTACK_ORDER } from "../utils/helpers.js";
 
 const normalizeAngle = (value) => {
@@ -114,12 +114,12 @@ export class AISystem {
     let finalDistance = Number.POSITIVE_INFINITY;
     let directHit = false;
 
-    for (let step = 0; step < 340; step += 1) {
+    for (let step = 0; step < 380; step += 1) {
       if (shot.trackingDelay && step / 60 >= shot.trackingDelay) {
         const anchor = target.getDamageAnchor();
         const desiredAngle = Math.atan2(anchor.y - y, anchor.x - x);
         const currentAngle = Math.atan2(vy, vx || 0.001);
-        const turn = Math.max(-shot.trackingTurnRate / 60, Math.min(shot.trackingTurnRate / 60, normalizeAngle(desiredAngle - currentAngle)));
+        const turn = clamp(normalizeAngle(desiredAngle - currentAngle), -shot.trackingTurnRate / 60, shot.trackingTurnRate / 60);
         const currentSpeed = Math.hypot(vx, vy);
         const maxSpeed = power * shot.launchSpeedMultiplier * (shot.trackingMaxSpeedMultiplier ?? 1);
         const nextSpeed = Math.min(maxSpeed, currentSpeed + (shot.trackingAcceleration ?? 0) / 60);
@@ -135,6 +135,12 @@ export class AISystem {
       const targetAnchor = target.getDamageAnchor();
       const currentDistance = distance(x, y, targetAnchor.x, targetAnchor.y);
       bestDistance = Math.min(bestDistance, currentDistance);
+
+      const wallPenalty = this.checkWall(game, x, y, shot.radius);
+      if (wallPenalty.hit) {
+        finalDistance = currentDistance + wallPenalty.penalty;
+        break;
+      }
 
       for (const circle of target.getHitCircles()) {
         if (distance(x, y, circle.x, circle.y) <= shot.radius + circle.radius) {
@@ -164,7 +170,20 @@ export class AISystem {
     const splashScore = Math.max(0, finalDistance - shot.splashRadius * 0.7);
     return { score: directHit ? -35 : Math.min(bestDistance, splashScore * 1.06 + bestDistance * 0.24) };
   }
+
+  checkWall(game, x, y, radius) {
+    const wall = game.state.wall;
+    if (!wall || wall.destroyed) {
+      return { hit: false, penalty: 0 };
+    }
+
+    const left = wall.x - wall.width / 2;
+    const right = wall.x + wall.width / 2;
+    const top = CONFIG.world.groundY - wall.height;
+    const bottom = CONFIG.world.groundY;
+    const closestX = clamp(x, left, right);
+    const closestY = clamp(y, top, bottom);
+    const hit = distance(x, y, closestX, closestY) <= radius;
+    return { hit, penalty: 110 };
+  }
 }
-
-
-

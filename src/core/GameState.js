@@ -1,3 +1,5 @@
+import { CONFIG } from "../config.js";
+
 export class GameState {
   constructor() {
     this.scene = "menu";
@@ -12,6 +14,7 @@ export class GameState {
     this.cpuPlan = null;
     this.preparedThrow = null;
     this.projectileQueue = [];
+    this.delayedBursts = [];
     this.bossShotsRemaining = 0;
     this.isBossFollowUpTurn = false;
     this.screenShake = 0;
@@ -21,6 +24,7 @@ export class GameState {
     this.cloudOffsetNear = 0;
     this.cloudOffsetFar = 0;
     this.elapsedTime = 0;
+    this.resetWall();
   }
 
   setScene(scene) {
@@ -55,9 +59,22 @@ export class GameState {
     this.dragAim = null;
   }
 
+  resetWall() {
+    this.wall = {
+      x: CONFIG.wall.x,
+      width: CONFIG.wall.width,
+      height: CONFIG.wall.height,
+      maxHp: CONFIG.wall.maxHp,
+      hp: CONFIG.wall.maxHp,
+      destroyed: false,
+      flashTimer: 0
+    };
+  }
+
   clearProjectileFlow() {
     this.preparedThrow = null;
     this.projectileQueue = [];
+    this.delayedBursts = [];
     this.bossShotsRemaining = 0;
     this.isBossFollowUpTurn = false;
   }

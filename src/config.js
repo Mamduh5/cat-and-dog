@@ -8,6 +8,12 @@ export const CONFIG = {
     cloudSpeedNear: 18,
     cloudSpeedFar: 9
   },
+  wall: {
+    x: 480,
+    width: 56,
+    height: 132,
+    maxHp: 150
+  },
   aim: {
     angleMin: 12,
     angleMax: 82,
@@ -32,7 +38,8 @@ export const CONFIG = {
     impactPause: 0.92,
     endPause: 1.25,
     healPause: 0.78,
-    bossFollowUpPause: 0.42
+    bossFollowUpPause: 0.42,
+    heavyBurstDelay: 0.6
   },
   player: {
     maxHp: 110,
@@ -58,7 +65,7 @@ export const CONFIG = {
       ammo: Infinity,
       shape: "ball",
       weight: 1,
-      launchSpeedMultiplier: 1.08,
+      launchSpeedMultiplier: 1.01,
       gravityMultiplier: 1.04,
       windInfluenceMultiplier: 1.22,
       radius: 7,
@@ -83,7 +90,7 @@ export const CONFIG = {
       ammo: 2,
       shape: "stick",
       weight: 0.66,
-      launchSpeedMultiplier: 1.14,
+      launchSpeedMultiplier: 1.08,
       gravityMultiplier: 0.84,
       windInfluenceMultiplier: 2.1,
       radius: 5.2,
@@ -113,7 +120,7 @@ export const CONFIG = {
       ammo: 3,
       shape: "rock",
       weight: 1.72,
-      launchSpeedMultiplier: 0.96,
+      launchSpeedMultiplier: 0.89,
       gravityMultiplier: 1.3,
       windInfluenceMultiplier: 0.46,
       radius: 9.2,
@@ -132,8 +139,8 @@ export const CONFIG = {
       explosionForce: 1.18,
       shake: 8.2,
       fragmentCount: 3,
-      fragmentSpeedMin: 138,
-      fragmentSpeedMax: 202
+      fragmentSpeedMin: 132,
+      fragmentSpeedMax: 190
     },
     super: {
       label: "Super",
@@ -141,8 +148,8 @@ export const CONFIG = {
       ammo: 1,
       shape: "rocket",
       weight: 1.28,
-      launchSpeedMultiplier: 0.99,
-      gravityMultiplier: 1.28,
+      launchSpeedMultiplier: 0.92,
+      gravityMultiplier: 1.2,
       windInfluenceMultiplier: 0.92,
       radius: 7,
       damageMin: 14,
@@ -160,10 +167,10 @@ export const CONFIG = {
       explosionParticles: 32,
       explosionForce: 1.34,
       shake: 9.6,
-      trackingDelay: 1.5,
-      trackingTurnRate: 1.92,
-      trackingAcceleration: 12,
-      trackingMaxSpeedMultiplier: 1.06
+      trackingDelay: 0.5,
+      trackingTurnRate: 2.35,
+      trackingAcceleration: 18,
+      trackingMaxSpeedMultiplier: 1.1
     }
   },
   specialProjectiles: {

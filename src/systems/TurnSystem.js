@@ -13,6 +13,7 @@ export class TurnSystem {
     game.state.cpuPlan = null;
     game.state.clearDragAim();
     game.clearTransientEffects();
+    game.state.resetWall();
     game.players[0].name = "P1 Cat";
     game.players[1].name = mode === "cpu" ? "CPU Dog" : "P2 Dog";
     game.players.forEach((player) => player.reset());
@@ -412,3 +413,6 @@ export class TurnSystem {
     }
   }
 }
+
+
+

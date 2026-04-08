@@ -7,6 +7,12 @@ export class CollisionSystem {
       return true;
     }
 
+    const wallImpact = this.checkWallCollision(game, projectile);
+    if (wallImpact) {
+      game.damageSystem.resolveImpact(game, wallImpact.x, wallImpact.y, { projectile, wallTarget: game.state.wall });
+      return true;
+    }
+
     for (const player of game.players) {
       for (const circle of player.getHitCircles()) {
         if (distance(projectile.transform.x, projectile.transform.y, circle.x, circle.y) <= projectile.shot.radius + circle.radius) {
@@ -36,5 +42,25 @@ export class CollisionSystem {
     }
 
     return false;
+  }
+
+  checkWallCollision(game, projectile) {
+    const wall = game.state.wall;
+    if (!wall || wall.destroyed || projectile.meta.sourceTag === "heavy-shard") {
+      return null;
+    }
+
+    const left = wall.x - wall.width / 2;
+    const right = wall.x + wall.width / 2;
+    const top = CONFIG.world.groundY - wall.height;
+    const bottom = CONFIG.world.groundY;
+    const closestX = clamp(projectile.transform.x, left, right);
+    const closestY = clamp(projectile.transform.y, top, bottom);
+
+    if (distance(projectile.transform.x, projectile.transform.y, closestX, closestY) <= projectile.shot.radius) {
+      return { x: closestX, y: closestY };
+    }
+
+    return null;
   }
 }

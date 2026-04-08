@@ -15,6 +15,7 @@ export class PhysicsSystem {
     game.state.cloudOffsetNear += CONFIG.world.cloudSpeedNear * dt;
     game.state.cloudOffsetFar += CONFIG.world.cloudSpeedFar * dt;
     game.state.screenShake = Math.max(0, game.state.screenShake - dt * 16);
+    game.state.wall.flashTimer = Math.max(0, game.state.wall.flashTimer - dt);
     game.players.forEach((player) => player.update(dt));
 
     game.particles = game.particles.filter((particle) => {
@@ -31,6 +32,17 @@ export class PhysicsSystem {
       text.life -= dt;
       return text.life > 0;
     });
+
+    const remainingBursts = [];
+    for (const burst of game.state.delayedBursts) {
+      burst.timer -= dt;
+      if (burst.timer <= 0) {
+        game.damageSystem.detonateHeavyBurst(game, burst);
+      } else {
+        remainingBursts.push(burst);
+      }
+    }
+    game.state.delayedBursts = remainingBursts;
   }
 
   createProjectileSpec(player, shotKey, shot, angle, power, overrides = {}) {
@@ -98,7 +110,7 @@ export class PhysicsSystem {
     game.state.preparedThrow = null;
     game.state.phase = "projectile";
     game.state.projectileQueue = [];
-    game.state.screenShake = Math.max(game.state.screenShake, 2.4);
+    game.state.screenShake = Math.max(game.state.screenShake, 2.2);
 
     if (prepared.shotKey === "light") {
       this.launchLightBurst(game, player, prepared, shot);
@@ -110,7 +122,7 @@ export class PhysicsSystem {
         this.queueProjectile(game, this.createProjectileSpec(player, "normal", echoShot, prepared.angle, prepared.power, {
           delay: 0.15,
           angleOffsetRad: randRange(-0.08, 0.08),
-          speedScale: 0.94,
+          speedScale: 0.9,
           sourceTag: "bossEcho"
         }));
         game.state.hint = `${player.name} cheats in an echo shot.`;
@@ -206,6 +218,3 @@ export class PhysicsSystem {
     projectile.transform.vy = Math.sin(nextAngle) * nextSpeed;
   }
 }
-
-
-
