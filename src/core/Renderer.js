@@ -1,6 +1,8 @@
 import { CONFIG } from "../config.js";
 import { formatAmmoCount, signLabel } from "../utils/helpers.js";
 import { easeOutCubic, lerp } from "../utils/math.js";
+import { EnvironmentRenderer } from "../rendering/EnvironmentRenderer.js";
+import { CharacterRenderer } from "../rendering/CharacterRenderer.js";
 
 export class Renderer {
   constructor(canvas) {
@@ -8,6 +10,8 @@ export class Renderer {
     this.ctx = canvas.getContext("2d");
     this.canvas.width = CONFIG.canvas.width;
     this.canvas.height = CONFIG.canvas.height;
+    this.environment = new EnvironmentRenderer(canvas);
+    this.characters = new CharacterRenderer();
   }
 
   render(game) {
@@ -18,14 +22,14 @@ export class Renderer {
     if (shake > 0) {
       ctx.translate((Math.random() - 0.5) * shake * 2, (Math.random() - 0.5) * shake * 2);
     }
-    this.drawBackground(ctx, game);
+    this.environment.drawBackground(ctx, game);
     this.drawWindIndicator(ctx, game.state.wind);
-    this.drawGround(ctx, game);
-    this.drawWall(ctx, game.state.wall);
+    this.environment.drawGround(ctx, game);
+    this.environment.drawWall(ctx, game.state.wall);
     this.drawAimGuide(ctx, game);
     game.players.forEach((player, index) => {
       const active = index === game.state.currentPlayerIndex && ["ready", "aiming", "windup"].includes(game.state.phase);
-      this.drawPlayer(ctx, player, game, active);
+      this.characters.draw(ctx, player, game, active);
     });
     if (game.state.dragAim) this.drawDragAim(ctx, game);
     game.particles.forEach((particle) => this.drawParticle(ctx, particle));
@@ -35,76 +39,6 @@ export class Renderer {
     game.floatingTexts.forEach((text) => this.drawFloatingText(ctx, text));
     ctx.restore();
     this.drawCanvasHud(ctx, game);
-  }
-
-  drawBackground(ctx, game) {
-    const sky = ctx.createLinearGradient(0, 0, 0, CONFIG.world.groundY);
-    sky.addColorStop(0, "#d6f1ff");
-    sky.addColorStop(0.65, "#f9efc9");
-    sky.addColorStop(1, "#f5ddab");
-    ctx.fillStyle = sky;
-    ctx.fillRect(0, 0, this.canvas.width, CONFIG.world.groundY);
-
-    ctx.fillStyle = "#fff4b4";
-    ctx.beginPath();
-    ctx.arc(120, 92, 38, 0, Math.PI * 2);
-    ctx.fill();
-
-    this.drawCloud(ctx, 90 + (game.state.cloudOffsetFar * 0.6) % 1120 - 160, 120, 0.9, 0.88);
-    this.drawCloud(ctx, 340 + (game.state.cloudOffsetNear * 0.7) % 1080 - 180, 74, 0.78, 0.94);
-    this.drawCloud(ctx, 740 + (game.state.cloudOffsetFar * 0.4) % 1160 - 190, 144, 1.04, 0.86);
-
-    ctx.fillStyle = "#9dbe7c";
-    ctx.beginPath();
-    ctx.moveTo(0, CONFIG.world.groundY);
-    ctx.quadraticCurveTo(170, 355, 360, CONFIG.world.groundY);
-    ctx.quadraticCurveTo(560, 332, 760, CONFIG.world.groundY);
-    ctx.lineTo(this.canvas.width, CONFIG.world.groundY);
-    ctx.lineTo(this.canvas.width, this.canvas.height);
-    ctx.lineTo(0, this.canvas.height);
-    ctx.closePath();
-    ctx.fill();
-
-    this.drawFence(ctx);
-    this.drawBush(ctx, 46, 404, 1.1);
-    this.drawBush(ctx, 262, 416, 0.94);
-    this.drawBush(ctx, 665, 410, 1.08);
-    this.drawBush(ctx, 852, 418, 0.9);
-  }
-
-  drawFence(ctx) {
-    ctx.fillStyle = "#d7c39a";
-    for (let x = 0; x < this.canvas.width; x += 28) ctx.fillRect(x, 350, 16, 80);
-    ctx.fillStyle = "#c2ab7f";
-    ctx.fillRect(0, 368, this.canvas.width, 10);
-    ctx.fillRect(0, 404, this.canvas.width, 10);
-  }
-
-  drawBush(ctx, x, y, scale) {
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.scale(scale, scale);
-    ctx.fillStyle = "#5b9b57";
-    ctx.beginPath();
-    ctx.arc(0, 0, 24, 0, Math.PI * 2);
-    ctx.arc(24, -8, 22, 0, Math.PI * 2);
-    ctx.arc(48, 0, 20, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-  }
-
-  drawCloud(ctx, x, y, scale, alpha) {
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.scale(scale, scale);
-    ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
-    ctx.beginPath();
-    ctx.arc(0, 0, 18, 0, Math.PI * 2);
-    ctx.arc(18, -10, 24, 0, Math.PI * 2);
-    ctx.arc(40, -2, 20, 0, Math.PI * 2);
-    ctx.arc(55, 6, 14, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
   }
 
   drawWindIndicator(ctx, wind) {
@@ -138,88 +72,6 @@ export class Renderer {
     ctx.closePath();
     ctx.fillStyle = intensity > 0.58 ? "#e8703a" : "#3786d2";
     ctx.fill();
-    ctx.restore();
-  }
-
-  drawGround(ctx, game) {
-    ctx.fillStyle = "#5c8b48";
-    ctx.fillRect(0, CONFIG.world.groundY, this.canvas.width, this.canvas.height - CONFIG.world.groundY);
-    ctx.fillStyle = "#7c5b3d";
-    ctx.fillRect(72, CONFIG.world.groundY - 24, 160, 24);
-    ctx.fillRect(this.canvas.width - 232, CONFIG.world.groundY - 24, 160, 24);
-    ctx.fillStyle = "#9a714d";
-    for (let plank = 0; plank < 5; plank += 1) {
-      ctx.fillRect(80 + plank * 30, CONFIG.world.groundY - 22, 23, 20);
-      ctx.fillRect(this.canvas.width - 224 + plank * 30, CONFIG.world.groundY - 22, 23, 20);
-    }
-    ctx.strokeStyle = "rgba(54, 95, 44, 0.6)";
-    ctx.lineWidth = 2;
-    const time = game.state.elapsedTime;
-    for (let x = 14; x < this.canvas.width; x += 30) {
-      const sway = Math.sin(time * 3 + x * 0.08 + game.state.wind * 0.01) * 5;
-      ctx.beginPath();
-      ctx.moveTo(x, CONFIG.world.groundY + 10);
-      ctx.lineTo(x + sway, CONFIG.world.groundY - 8);
-      ctx.stroke();
-    }
-  }
-
-  drawWall(ctx, wall) {
-    if (!wall || wall.destroyed) {
-      return;
-    }
-
-    const left = wall.x - wall.width / 2;
-    const top = CONFIG.world.groundY - wall.height;
-    const flash = wall.flashTimer > 0 ? 0.28 : 0;
-    const hpRatio = Math.max(0, wall.hp / wall.maxHp);
-
-    ctx.save();
-    ctx.fillStyle = "rgba(45, 36, 30, 0.18)";
-    ctx.beginPath();
-    ctx.ellipse(wall.x, CONFIG.world.groundY + 2, wall.width * 0.7, 10, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = "#8b6546";
-    this.fillRoundedRect(ctx, left, top, wall.width, wall.height, 10);
-    if (flash > 0) {
-      ctx.fillStyle = `rgba(255,255,255,${flash})`;
-      this.fillRoundedRect(ctx, left, top, wall.width, wall.height, 10);
-    }
-
-    ctx.strokeStyle = "rgba(72, 50, 35, 0.45)";
-    ctx.lineWidth = 2;
-    for (let row = 1; row < 5; row += 1) {
-      const y = top + row * 24;
-      ctx.beginPath();
-      ctx.moveTo(left + 6, y);
-      ctx.lineTo(left + wall.width - 6, y);
-      ctx.stroke();
-    }
-    for (let col = 1; col < 3; col += 1) {
-      const x = left + col * (wall.width / 3);
-      ctx.beginPath();
-      ctx.moveTo(x, top + 8);
-      ctx.lineTo(x, CONFIG.world.groundY - 6);
-      ctx.stroke();
-    }
-
-    const crackDepth = 1 - hpRatio;
-    if (crackDepth > 0.08) {
-      ctx.strokeStyle = "rgba(59, 40, 28, 0.68)";
-      ctx.lineWidth = 2.4;
-      ctx.beginPath();
-      ctx.moveTo(wall.x - 4, top + 8);
-      ctx.lineTo(wall.x + 3, top + 28 + crackDepth * 8);
-      ctx.lineTo(wall.x - 8, top + 52 + crackDepth * 14);
-      ctx.lineTo(wall.x + 6, top + 78 + crackDepth * 18);
-      ctx.stroke();
-    }
-
-    ctx.fillStyle = "rgba(15, 28, 42, 0.7)";
-    this.fillRoundedRect(ctx, wall.x - 32, top - 16, 64, 8, 4);
-    ctx.fillStyle = "#d17a4a";
-    this.fillRoundedRect(ctx, wall.x - 32, top - 16, 64 * hpRatio, 8, 4);
     ctx.restore();
   }
 
@@ -309,141 +161,6 @@ export class Renderer {
     ctx.beginPath();
     ctx.arc(drag.currentX, drag.currentY, 19, 0, Math.PI * 2);
     ctx.stroke();
-    ctx.restore();
-  }
-
-  drawPlayer(ctx, player, game, isCurrent) {
-    const time = game.state.elapsedTime;
-    const defeat = player.render.defeatProgress;
-    const bob = Math.sin((time + player.id * 0.6 + player.render.idleTime) * 2.3) * CONFIG.player.idleBobAmount * (1 - defeat * 0.65);
-    const sway = Math.sin((time + player.id * 0.7) * 1.9) * 1.8 * (1 - defeat * 0.8);
-    const hurtShift = player.render.flashTimer > 0 ? Math.sin(player.render.flashTimer * 52) * 3 : 0;
-    const flash = player.render.flashTimer > 0 ? 0.26 : 0;
-    const anticipation = player.weapon.anticipationTimer > 0 ? 1 - player.weapon.anticipationTimer / player.weapon.anticipationDuration : 0;
-    const recoil = player.weapon.recoilTimer > 0 ? 1 - player.weapon.recoilTimer / player.weapon.recoilDuration : 0;
-    const colors = player.render.colors;
-    const bodyPull = easeOutCubic(anticipation) * CONFIG.player.anticipationLift * (1 - defeat);
-    const bodyRecoil = Math.sin(recoil * Math.PI) * CONFIG.player.recoilAmount * (1 - defeat);
-    const tilt = defeat * CONFIG.player.defeatTilt;
-    const fade = 1 - defeat * CONFIG.player.defeatFade;
-
-    ctx.save();
-    ctx.globalAlpha = fade;
-    ctx.translate(player.transform.x + hurtShift, CONFIG.world.groundY + bob + defeat * CONFIG.player.defeatDrop);
-    ctx.scale(player.facing, Math.max(0.74, 1 - defeat * 0.22));
-
-    ctx.fillStyle = "rgba(24, 39, 58, 0.16)";
-    ctx.beginPath();
-    ctx.ellipse(0, -1 + defeat * 2, 34 + defeat * 8, 10 - defeat * 3.4, 0, 0, Math.PI * 2);
-    ctx.fill();
-    if (isCurrent && defeat < 0.08) {
-      ctx.strokeStyle = "rgba(255, 250, 236, 0.95)";
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.arc(0, -52, 40, 0, Math.PI * 2);
-      ctx.stroke();
-    }
-
-    ctx.translate(-bodyRecoil * 0.8, -bodyPull + defeat * 6);
-    ctx.rotate(sway * Math.PI / 180 - tilt);
-
-    ctx.fillStyle = colors.legs;
-    ctx.fillRect(-12, -34 + defeat * 5, 8, 30 - defeat * 6);
-    ctx.fillRect(5, -34 + defeat * 5, 8, 30 - defeat * 6);
-    ctx.fillStyle = colors.body;
-    ctx.beginPath();
-    ctx.ellipse(0, -42, 25, 28, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = colors.belly;
-    ctx.beginPath();
-    ctx.ellipse(0, -35, 13, 12, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = colors.outline;
-    ctx.lineWidth = 4;
-    ctx.lineCap = "round";
-    ctx.beginPath();
-    ctx.moveTo(18, -48);
-    ctx.quadraticCurveTo(34, -58, 31, player.species === "cat" ? -88 : -30);
-    ctx.stroke();
-    ctx.fillStyle = colors.body;
-    ctx.beginPath();
-    ctx.arc(0, -79, 20, 0, Math.PI * 2);
-    ctx.fill();
-    if (player.species === "cat") {
-      ctx.beginPath();
-      ctx.moveTo(-12, -90);
-      ctx.lineTo(-5, -110);
-      ctx.lineTo(2, -88);
-      ctx.closePath();
-      ctx.fill();
-      ctx.beginPath();
-      ctx.moveTo(12, -90);
-      ctx.lineTo(5, -110);
-      ctx.lineTo(-2, -88);
-      ctx.closePath();
-      ctx.fill();
-    } else {
-      ctx.fillStyle = colors.ear;
-      ctx.beginPath();
-      ctx.ellipse(-15, -80, 8, 15, -0.4, 0, Math.PI * 2);
-      ctx.ellipse(15, -80, 8, 15, 0.4, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    if (flash > 0) {
-      ctx.fillStyle = `rgba(255,255,255,${flash})`;
-      ctx.beginPath();
-      ctx.ellipse(0, -42, 25, 28, 0, 0, Math.PI * 2);
-      ctx.arc(0, -79, 20, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.fillStyle = "#fff";
-    ctx.beginPath();
-    ctx.arc(-7, -82, 3.5, 0, Math.PI * 2);
-    ctx.arc(7, -82, 3.5, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = colors.outline;
-    if (defeat > 0.2) {
-      ctx.lineWidth = 2.2;
-      ctx.beginPath();
-      ctx.moveTo(-10, -82);
-      ctx.lineTo(-4, -79);
-      ctx.moveTo(4, -79);
-      ctx.lineTo(10, -82);
-      ctx.stroke();
-    } else {
-      ctx.fillStyle = "#17304d";
-      ctx.beginPath();
-      ctx.arc(-7, -82, 1.6, 0, Math.PI * 2);
-      ctx.arc(7, -82, 1.6, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.fillStyle = player.species === "cat" ? "#f28a8a" : "#4f392e";
-    ctx.beginPath();
-    ctx.arc(0, -74, 4, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = colors.outline;
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(-4, -70);
-    ctx.quadraticCurveTo(0, -66 + defeat * 6, 4, -70);
-    ctx.stroke();
-    const angle = player.aim.angle * Math.PI / 180;
-    const aimPull = easeOutCubic(anticipation) * (1 - defeat);
-    const liveTargetX = 20 + Math.cos(angle) * (22 + aimPull * 8) - aimPull * 12;
-    const liveTargetY = -63 - Math.sin(angle) * 22 + aimPull * 2;
-    const droopTargetX = 14;
-    const droopTargetY = -34;
-    const targetX = liveTargetX + (droopTargetX - liveTargetX) * defeat;
-    const targetY = liveTargetY + (droopTargetY - liveTargetY) * defeat;
-    ctx.lineWidth = 5;
-    ctx.beginPath();
-    ctx.moveTo(10, -53);
-    ctx.lineTo(targetX, targetY);
-    ctx.stroke();
-    ctx.fillStyle = colors.accent;
-    ctx.beginPath();
-    ctx.arc(targetX, targetY, 5 - defeat * 1.6, 0, Math.PI * 2);
-    ctx.fill();
     ctx.restore();
   }
 

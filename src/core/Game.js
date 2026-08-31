@@ -41,7 +41,7 @@ export class Game {
         species: "cat",
         x: 150,
         facing: 1,
-        colors: { body: "#f2965a", belly: "#ffdcb5", legs: "#7b4c36", ear: "#ffdcb5", accent: "#f4cd52", outline: "#5b3425" }
+        colors: { body: "#e7d5b3", belly: "#f4e7cb", legs: "#665248", ear: "#c99691", accent: "#6b8790", outline: "#57473e" }
       }),
       new Player({
         id: 2,
@@ -49,7 +49,7 @@ export class Game {
         species: "dog",
         x: CONFIG.canvas.width - 150,
         facing: -1,
-        colors: { body: "#63a1db", belly: "#d9efff", legs: "#355977", ear: "#446d93", accent: "#ffd36d", outline: "#274763" }
+        colors: { body: "#d38350", belly: "#f1dfbd", legs: "#b9663f", ear: "#c98d86", accent: "#bd8a55", outline: "#544139" }
       })
     ];
 
